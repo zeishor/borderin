@@ -38,7 +38,7 @@ interface Mesaj {
   trimis?: string;
 }
 
-const PREFIX = /^\[(\d{1,2}):(\d{2}),\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\]\s*[^:\t]*:\s*/;
+const SENDER = String.raw`\s*[^:\t]*:\s*`;
 const TELEFON_LA_INCEPUT = /^(?:\+|00)?\d[\d\s().-]*\d/;
 const BANI = /(\d+(?:[.,]\d+)?)\s*(?:de\s+)?(euro|eur|lei|ron|€)/gi;
 const CUVINTE_PLATA = /achit|cash|plat[aă]\s+la|la\s+[sș]ofer|\bop\b|ordin\s+de\s+plat|fact\./i;
@@ -148,9 +148,38 @@ function esteRandComplet(linie: string): boolean {
   return linie.split('\t').length >= 6;
 }
 
-function imparteMesaje(text: string): Mesaj[] {
+/**
+ * Scoate prefixul WhatsApp și întoarce data trimiterii. Formate: Desktop `[12:01, 11/15/2026] nume:`
+ * (lună/zi/an), telefon `[15/11, 12:01] nume:` (zi/lună, fără an), iOS `[15.11.2026, 12:01:33] nume:`
+ * și export Android `15/11/2026, 12:01 - nume:` (zi/lună/an).
+ */
+function scoatePrefix(l: string, astazi: string): { text: string; trimis: string } | undefined {
+  const an = Number(astazi.slice(0, 4));
+  const fara = (zi: string, luna: string) => {
+    let candidat = `${an}-${pad(luna)}-${pad(zi)}`;
+    if (candidat > adaugaZile(astazi, 30)) candidat = `${an - 1}-${pad(luna)}-${pad(zi)}`;
+    return candidat;
+  };
+  const an4 = (a: string) => (a.length === 2 ? '20' + a : a);
+
+  let m = l.match(new RegExp(String.raw`^\[(\d{1,2}):(\d{2})(?::\d{2})?,\s*(\d{1,2})/(\d{1,2})/(\d{4})\]` + SENDER));
+  if (m) return { text: l.slice(m[0].length), trimis: `${m[5]}-${pad(m[3])}-${pad(m[4])}` };
+
+  m = l.match(new RegExp(String.raw`^\[(\d{1,2})[/.](\d{1,2})(?:[/.](\d{2,4}))?,\s*\d{1,2}:\d{2}(?::\d{2})?\]` + SENDER));
+  if (m) {
+    const trimis = m[3] ? `${an4(m[3])}-${pad(m[2])}-${pad(m[1])}` : fara(m[1], m[2]);
+    return { text: l.slice(m[0].length), trimis };
+  }
+
+  m = l.match(new RegExp(String.raw`^(\d{1,2})[/.](\d{1,2})[/.](\d{2,4}),\s*\d{1,2}:\d{2}(?::\d{2})?\s*-` + SENDER));
+  if (m) return { text: l.slice(m[0].length), trimis: `${an4(m[3])}-${pad(m[2])}-${pad(m[1])}` };
+
+  return undefined;
+}
+
+function imparteMesaje(text: string, astazi: string): Mesaj[] {
   const linii = text.split(/\r?\n/).map((l) => l.replace(/\s+$/, ''));
-  const cuPrefix = linii.some((l) => PREFIX.test(l.trim()));
+  const cuPrefix = linii.some((l) => !!scoatePrefix(l.trim(), astazi));
   const mesaje: Mesaj[] = [];
   // Fără prefix WhatsApp: rândurile-fragment (puține coloane) ale aceluiași mesaj se lipesc
   // între ele, până la un rând complet, un telefon singur, o plecare sau un rând gol.
@@ -162,12 +191,9 @@ function imparteMesaje(text: string): Mesaj[] {
       continue;
     }
     const l = linie.replace(/^ +/, '');
-    const p = l.match(PREFIX);
+    const p = scoatePrefix(l, astazi);
     if (p) {
-      mesaje.push({
-        text: l.replace(PREFIX, ''),
-        trimis: `${p[5]}-${pad(p[3])}-${pad(p[4])}`,
-      });
+      mesaje.push(p);
     } else if (cuPrefix && mesaje.length) {
       mesaje[mesaje.length - 1].text += '\t' + l;
     } else if (esteRandComplet(l) || esteTelefonSingur(l.trim()) || (!l.includes('\t') && /plec/i.test(l))) {
@@ -361,7 +387,7 @@ function parseLiber(text: string): RezervareExtrasa | undefined {
 export function parseMesaje(text: string, astazi: string = azi()): Rezultat {
   const rezultat: Rezultat = { rezervari: [], note: [] };
 
-  for (const mesaj of imparteMesaje(text)) {
+  for (const mesaj of imparteMesaje(text, astazi)) {
     const t = mesaj.text.trim();
     const celule = mesaj.text.split('\t').map((c) => {
       const x = c.trim();

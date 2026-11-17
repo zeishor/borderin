@@ -239,3 +239,31 @@ describe('mesaj pe mai multe rânduri, fără prefix WhatsApp', () => {
     expect(r.rezervari[0].directie).toBe('retur');
   });
 });
+
+describe('formate de prefix WhatsApp', () => {
+  const rand = t('Ion', 'Prefix', '0700000040', '2026-11-16', 'Budapesta-Timisoara', '', '', '10:30 Cagliari', 'Str X 1', '40 euro');
+
+  it.each([
+    ['[15/11, 12:01] +40 700 000 000: ', 'telefon, zi/lună fără an'],
+    ['[12:01, 11/15/2026] +40 700 000 000: ', 'Desktop, lună/zi/an'],
+    ['[15.11.2026, 12:01:33] Dispecer: ', 'iOS'],
+    ['15/11/2026, 12:01 - Dispecer: ', 'export Android'],
+  ])('%s (%s)', (prefix) => {
+    const r = parseMesaje(prefix + rand, AZI);
+    expect(r.rezervari).toHaveLength(1);
+    expect(r.rezervari[0].nume).toBe('Ion Prefix');
+    expect(r.rezervari[0].ora).toBe('10:30');
+  });
+
+  it('„mâine" se calculează din data prefixului de telefon', () => {
+    const r = parseMesaje('[15/11, 18:00] +40 700 000 000: Pleci mâine la 12 din Timișoara cu retur de 16:40', AZI);
+    expect(r).toMatchObject({ plecare: '12:00', retur: '16:40', data: '2026-11-16' });
+  });
+
+  it('„retur maine" pe mai multe rânduri cu prefix de telefon', () => {
+    const text = ['[15/11, 12:23] +40 700 000 000: retur maine \t16-11-26\t', '10:30 FR0000 ', 'ION EXEMPLU\t+39 340 000 0099\t', 'Budapesta – Timisoara', 'achita 40 euro'].join('\n');
+    const r = parseMesaje(text, AZI);
+    expect(r.rezervari).toHaveLength(1);
+    expect(r.rezervari[0]).toMatchObject({ nume: 'Ion Exemplu', directie: 'retur', data: '2026-11-16', ora: '10:30' });
+  });
+});

@@ -238,6 +238,45 @@ export function parseRuta(c: string): { directie: Directie; destinatie: string; 
   return { directie: 'retur', destinatie: curataLoc(a), lasare: curataLoc(b) };
 }
 
+const STRADA = /\b(str\.?|strada|b-?dul\.?|bulevardul|calea|aleea|bl\.?|nr\.?)(?=\s|\.|\d|$)/i;
+
+/**
+ * Opriri din celula de pasageri, ex. „…: Ana si Ion , Sacalaz , Str. A nr 5 ; si Dan , 0762… , Str. B , Bl. 14".
+ * Segmentele sunt separate prin „;", numele sunt prima parte, restul (fără telefoane) e adresa.
+ * Localitatea care lipsește se ia din prima localitate neutilizată din celula de preluare/lăsare.
+ */
+function opriri(nota: string, locuri: string | undefined): string[] | undefined {
+  const dupaDouaPuncte = nota.includes(':') ? nota.slice(nota.indexOf(':') + 1) : nota;
+  const segmente = dupaDouaPuncte.split(';').map((x) => x.trim()).filter(Boolean);
+  if (!segmente.some((x) => STRADA.test(x))) return undefined;
+
+  const orase = (locuri ?? '').split(/\s+(?:si|și)\s+|,/i).map((x) => x.trim()).filter(Boolean);
+  const folosite = new Set<string>();
+  const rezultat: string[] = [];
+
+  for (const seg of segmente) {
+    const parti = seg
+      .split(',')
+      .map((x) => x.trim())
+      .filter((x) => x && !esteCelulaTelefon(x) && !/^tel\b/i.test(x));
+    if (parti.length < 2) continue;
+    const nume = parti[0].replace(/^(si|și)\s+/i, '');
+    if (/\d/.test(nume) || STRADA.test(nume)) continue; // prima parte trebuie să fie nume, nu adresă sau oră
+    const adresa = parti.slice(1);
+    const oras = orase.find((o) => norm(o) === norm(adresa[0]));
+    if (oras) folosite.add(norm(oras));
+    else {
+      const liber = orase.find((o) => !folosite.has(norm(o)));
+      if (liber) {
+        adresa.unshift(liber);
+        folosite.add(norm(liber));
+      }
+    }
+    rezultat.push(`${adresa.join(', ')} (${nume})`);
+  }
+  return rezultat.length ? rezultat : undefined;
+}
+
 function parseRezervare(cells: string[], original: string, trimis: string): RezervareExtrasa {
   const idxTel = cells.findIndex(esteCelulaTelefon);
   const idxRuta = cells.findIndex((c, i) => i !== idxTel && !!parseRuta(c));
@@ -256,6 +295,7 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
   let preluare: string | undefined;
   let lasare: string | undefined;
   let plata: Plata | undefined;
+  const celulePax: string[] = [];
   let destinatie: string | undefined = ruta?.destinatie;
 
   const numeFaraTelefon = cells.slice(0, idxTel).some((c, i) => c && i !== idxRuta && !esteMetadata(c));
@@ -303,6 +343,7 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
 
     if (/pax|bagaj|\btel\b/i.test(c) || c.length > 60) {
       note.push(c);
+      if (/pax/i.test(c)) celulePax.push(c);
       for (const tel of telefoaneDinText(c)) adaugaTelefon(telefoane, tel);
       return;
     }
@@ -332,6 +373,14 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
   const directie = ruta?.directie ?? directieCuvant;
   if (!lasare && ruta?.lasare) lasare = ruta.lasare;
   if (!destinatie && lasare) destinatie = lasare.split(',')[0].trim();
+
+  for (const c of celulePax) {
+    const stop = opriri(c, directie === 'retur' ? lasare : preluare);
+    if (!stop) continue;
+    if (directie === 'retur') lasare = stop.join(' + ');
+    else preluare = stop.join(' + ');
+    break;
+  }
 
   // Fără adresă scrisă: la dus se pleacă din Timișoara spre aeroportul destinației,
   // la retur se pleacă de la aeroportul destinației spre Timișoara.

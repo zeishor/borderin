@@ -101,7 +101,7 @@ describe('grup, mai multe telefoane, observații', () => {
     expect(r.nume).toBe('Maria Test Prob');
     expect(r.eticheta).toBe('PRIVAT');
     expect(r.pasageri).toBe(3);
-    expect(r.preluare).toBe('Sacalaz si Timisoara');
+    expect(r.preluare).toBe('Sacalaz, Str. A 5 (Maria Prob) + Timisoara, Str. B (Ana Z)');
     expect(r.telefoane.map((x) => x.numar)).toContain('0762 000 010');
     expect(r.zbor).toBe('W6 2289, STR');
   });
@@ -288,5 +288,26 @@ describe('adrese implicite când mesajul nu le scrie', () => {
     const r = parseMesaje('Ion Liber 0700 000 052 mâine 10:30', AZI).rezervari[0];
     expect(r.preluare).toBeUndefined();
     expect(r.lasare).toBeUndefined();
+  });
+});
+
+describe('adrese din celula de pasageri', () => {
+  it('mai multe opriri cu localități și nume', () => {
+    const r = parseMesaje(
+      t('Maria Test - PRIVAT', 'Prob', '0700000060', '2026-11-16', 'Timisoara-Budapesta', 'Sacalaz si Timisoara', '3 Pax - au bagaje de cala- : Prob Maria si Oana Zeta , Sacalaz , Str. Castanelor nr 5 ; si Ion Alfa , 0762 000 061 , Str. Florilor , Bl. 14', '11:00 , W6 2289 , STR', 'Aeroport Budapesta', 'Achita cu OP'),
+      AZI,
+    ).rezervari[0];
+    expect(r.preluare).toBe('Sacalaz, Str. Castanelor nr 5 (Prob Maria si Oana Zeta) + Timisoara, Str. Florilor, Bl. 14 (Ion Alfa)');
+    expect(r.lasare).toBe('Aeroport Budapesta');
+    expect(r.telefoane.map((x) => x.numar)).toContain('0762 000 061');
+  });
+
+  it('fără străzi în celulă, preluarea rămâne cea din mesaj', () => {
+    const r = parseMesaje(
+      t('Radu', 'Prob', '0700000062', '2026-11-14', 'Budapesta-Timisoara', 'Aeroport Budapesta', '2 Pax : Radu Prob: tel. 0737 000 063 si Rares Zeta: tel. 0725 000 064 - cate 1 bagaj de cala', '16:40 , FR4133 , BRISTOL', 'Timisoara, str. Test, nr.16, sc.A', 'Achita cu OP'),
+      AZI,
+    ).rezervari[0];
+    expect(r.preluare).toBe('Aeroport Budapesta');
+    expect(r.lasare).toBe('Timisoara, str. Test, nr.16, sc.A');
   });
 });

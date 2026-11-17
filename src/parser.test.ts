@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseMesaje } from './parser';
+import { parseMesaje, parseRuta } from './parser';
 
 // Date inventate; doar structura imită mesajele reale.
 const t = (...c: string[]) => c.join('\t');
@@ -177,5 +177,29 @@ describe('mesaje WhatsApp și alte feluri de text', () => {
     const r = parseMesaje(t('A', 'B', '0700000015', '2026-11-20', 'Timisoara-Arad', '10:00', '15 EURO'), AZI);
     expect(r.data).toBe('2026-11-20');
     expect(r.destinatie).toBe('Arad');
+  });
+});
+
+describe('ruta (oraș preluare - oraș destinație)', () => {
+  it('variante de scriere', () => {
+    expect(parseRuta('Timisoara-Budapesta')).toEqual({ directie: 'dus', destinatie: 'Budapesta' });
+    expect(parseRuta('Timișoara – Aeroport Budapesta')).toEqual({ directie: 'dus', destinatie: 'Budapesta' });
+    expect(parseRuta('Budapesta Aeroport - Timisoara')).toEqual({ directie: 'retur', destinatie: 'Budapesta' });
+    expect(parseRuta('TIMISOARA -> BUDAPESTA')).toEqual({ directie: 'dus', destinatie: 'BUDAPESTA' });
+    expect(parseRuta('Budapesta — Timișoara')).toEqual({ directie: 'retur', destinatie: 'Budapesta' });
+    expect(parseRuta('Budapesta-Arad')).toEqual({ directie: 'retur', destinatie: 'Budapesta', lasare: 'Arad' });
+  });
+
+  it('nu confundă adrese sau nume cu o rută', () => {
+    expect(parseRuta('GIROC-STR.DUNAREA 5')).toBeUndefined();
+    expect(parseRuta('Maria-Ioana')).toBeUndefined();
+    expect(parseRuta('Giroc - Strada Exemplu')).toBeUndefined();
+  });
+
+  it('ruta se găsește și înainte de telefon sau pe alt loc în rând', () => {
+    const r = parseMesaje(t('Timisoara - Aeroport Budapesta', 'Ion', 'Probe', '0700 000 020', '2026-11-14', '12:00', '40 euro'), AZI).rezervari[0];
+    expect(r.directie).toBe('dus');
+    expect(r.destinatie).toBe('Budapesta');
+    expect(r.nume).toBe('Ion Probe');
   });
 });

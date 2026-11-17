@@ -38,7 +38,6 @@ interface Mesaj {
   trimis?: string;
 }
 
-const LITERE = 'A-Za-zĂÂÎȘȚăâîșțŞşŢţ';
 const PREFIX = /^\[(\d{1,2}):(\d{2}),\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\]\s*[^:\t]*:\s*/;
 const TELEFON_LA_INCEPUT = /^(?:\+|00)?\d[\d\s().-]*\d/;
 const BANI = /(\d+(?:[.,]\d+)?)\s*(?:de\s+)?(euro|eur|lei|ron|€)/gi;
@@ -177,16 +176,37 @@ function parsePlecare(text: string, baza: string) {
   return { plecare: normOra(p[1], p[2]), retur: r ? normOra(r[1], r[2]) : undefined, data };
 }
 
+const LOC_CUNOSCUT = /timi[sș]oara|budapest|arad|oradea|belgrad|viena|cluj|sibiu|szeged|debrecen|aeroport/i;
+
+function curataLoc(s: string): string {
+  return s.replace(/\baeroport(ul)?\b/gi, '').replace(/\s+/g, ' ').trim() || s.trim();
+}
+
+/** „Oraș preluare - oraș destinație", oriunde într-un rând, cu cuvinte multiple și diferite liniuțe. */
+export function parseRuta(c: string): { directie: Directie; destinatie: string; lasare?: string } | undefined {
+  const m = c.match(/^([^\d]{3,30}?)\s*(?:->|→|–|—|-)+\s*([^\d]{3,30})$/u);
+  if (!m) return undefined;
+  const [a, b] = [m[1].trim(), m[2].trim()];
+  if ([a, b].some((x) => x.split(/\s+/).length > 3)) return undefined;
+  if (!LOC_CUNOSCUT.test(a) && !LOC_CUNOSCUT.test(b)) return undefined;
+  const timisoara = /timi[sș]oara/i;
+  if (timisoara.test(norm(a)) || timisoara.test(a)) return { directie: 'dus', destinatie: curataLoc(b) };
+  if (timisoara.test(b)) return { directie: 'retur', destinatie: curataLoc(a) };
+  return { directie: 'retur', destinatie: curataLoc(a), lasare: curataLoc(b) };
+}
+
 function parseRezervare(cells: string[], original: string): RezervareExtrasa {
   const idxTel = cells.findIndex(esteCelulaTelefon);
+  const idxRuta = cells.findIndex((c, i) => i !== idxTel && !!parseRuta(c));
+  const ruta = idxRuta >= 0 ? parseRuta(cells[idxRuta]) : undefined;
   const nume: string[] = [];
   const note: string[] = [];
   const telefoane: Telefon[] = [];
   let eticheta: string[] = [];
   let numeDinTelefon: string | undefined;
 
-  for (const c of cells.slice(0, idxTel)) {
-    if (!c) continue;
+  for (const [i, c] of cells.slice(0, idxTel).entries()) {
+    if (!c || i === idxRuta) continue;
     if (/pax/i.test(c)) {
       note.push(c);
       continue;
@@ -210,35 +230,21 @@ function parseRezervare(cells: string[], original: string): RezervareExtrasa {
   }
 
   let data: string | undefined;
-  let directie: Directie | undefined;
-  let destinatie: string | undefined;
-  let lasareRuta: string | undefined;
+  const directie: Directie | undefined = ruta?.directie;
+  let destinatie: string | undefined = ruta?.destinatie;
+  const lasareRuta: string | undefined = ruta?.lasare;
   let ora: string | undefined;
   let zbor: string | undefined;
   let preluare: string | undefined;
   let lasare: string | undefined;
   let plata: Plata | undefined;
 
-  for (const c of cells.slice(idxTel + 1)) {
-    if (!c) continue;
+  for (const [j, c] of cells.slice(idxTel + 1).entries()) {
+    if (!c || idxTel + 1 + j === idxRuta) continue;
 
     const d = parseData(c);
     if (d && !data) {
       data = d;
-      continue;
-    }
-
-    const ruta = c.match(new RegExp(`^([${LITERE}]{3,15})\\s*[-–]\\s*([${LITERE}]{3,15})$`));
-    if (ruta && !directie) {
-      const [a, b] = [ruta[1], ruta[2]];
-      if (norm(a) === 'timisoara') {
-        directie = 'dus';
-        destinatie = b;
-      } else {
-        directie = 'retur';
-        destinatie = a;
-        if (norm(b) !== 'timisoara') lasareRuta = b;
-      }
       continue;
     }
 

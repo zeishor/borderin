@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { go } from '../router';
 import { deleteCursa, saveCursa, saveRezervare, useStore } from '../store';
-import { fmtData, textIncasat, titluCursa } from '../format';
+import { fmtData, textIncasat, titluCursa, totalPasageri } from '../format';
 import { parseMesaje } from '../parser';
 import { aplicaPeCursa, rezervareDinExtras } from '../importa';
 import { Field, Screen } from '../ui';
@@ -12,7 +12,7 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
   return (
     <section>
       <h2 class="day">
-        {props.titlu} ({sortate.length})
+        {props.titlu} ({totalPasageri(sortate)} pax)
       </h2>
       {sortate.length === 0 && <p class="muted">Nimic aici.</p>}
       {sortate.map((r) => (

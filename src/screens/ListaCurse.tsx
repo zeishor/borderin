@@ -1,6 +1,6 @@
 import { go } from '../router';
 import { useStore } from '../store';
-import { fmtData, textIncasat, titluCursa } from '../format';
+import { fmtData, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Screen } from '../ui';
 
 export function ListaCurse() {
@@ -36,7 +36,7 @@ export function ListaCurse() {
               <button key={c.id} class="card" onClick={() => go(`/cursa/${c.id}`)}>
                 <strong>{titluCursa(c)}</strong>
                 <span class="muted">
-                  {ale.length} rezervări · {masina ? masina.nume : 'fără mașină'}
+                  {ale.length} rezervări · {totalPasageri(ale)} pax · {masina ? masina.nume : 'fără mașină'}
                   {c.plecare ? ` · plecare ${c.plecare}` : ''}
                 </span>
                 <span>De încasat: {textIncasat(ale)}</span>

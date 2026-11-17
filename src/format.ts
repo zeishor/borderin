@@ -37,3 +37,7 @@ export function textIncasat(rezervari: Rezervare[]): string {
 export function titluCursa(c: Cursa): string {
   return `Timișoara – ${c.destinatie || 'destinație?'}`;
 }
+
+export function totalPasageri(rezervari: Rezervare[]): number {
+  return rezervari.reduce((n, r) => n + r.pasageri, 0);
+}

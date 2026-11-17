@@ -1,0 +1,11 @@
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+.env
+*.local
+build/
+dist/
+
+# exemple reale cu date de clienți (nume, telefoane) — nu se urcă în repo
+samples/private/

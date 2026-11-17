@@ -67,3 +67,23 @@ export interface Setari {
   /** Durata drumului destinație → Timișoara. */
   drumInapoiOre: number;
 }
+
+export type MonedaBilet = 'HUF' | 'EUR' | 'RON';
+
+/** Bilet de aeroport (taxa de intrare la arrivals), cheltuială de decontat. */
+export interface Bilet {
+  id: string;
+  cursaId: string;
+  creat: number;
+  modificat: number;
+  suma?: number;
+  moneda: MonedaBilet;
+  /** YYYY-MM-DDTHH:MM */
+  intrare?: string;
+  /** YYYY-MM-DDTHH:MM */
+  iesire?: string;
+  numar?: string;
+  foto?: Blob;
+  /** Textul citit de OCR, păstrat pentru verificare. */
+  textOcr?: string;
+}

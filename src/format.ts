@@ -1,5 +1,5 @@
 import { sumeDinText } from './parser';
-import type { Cursa, Moneda, Plata, Rezervare } from './types';
+import type { Bilet, Cursa, Moneda, MonedaBilet, Plata, Rezervare } from './types';
 
 export function azi(): string {
   const d = new Date();
@@ -71,4 +71,25 @@ export function titluCursa(c: Cursa): string {
 
 export function totalPasageri(rezervari: Rezervare[]): number {
   return rezervari.reduce((n, r) => n + r.pasageri, 0);
+}
+
+export function fmtSumaBilet(suma: number, moneda: MonedaBilet): string {
+  const simbol = { HUF: 'Ft', EUR: '€', RON: 'lei' }[moneda];
+  return `${suma.toLocaleString('ro-RO')} ${simbol}`;
+}
+
+/** Totalul cheltuielilor din bilete, separat pe monede. */
+export function textCheltuieli(bilete: Bilet[]): string {
+  const total: Partial<Record<MonedaBilet, number>> = {};
+  for (const b of bilete) if (b.suma) total[b.moneda] = (total[b.moneda] ?? 0) + b.suma;
+  const parti = (['HUF', 'EUR', 'RON'] as MonedaBilet[]).filter((m) => total[m]).map((m) => fmtSumaBilet(total[m]!, m));
+  return parti.length ? parti.join(' + ') : '—';
+}
+
+/** „2026-11-16T10:45" → „16 nov, 10:45". */
+export function fmtMoment(iso: string): string {
+  const [d, t] = iso.split('T');
+  const [y, m, z] = d.split('-').map(Number);
+  const zi = new Date(y, m - 1, z).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
+  return `${zi}, ${t ?? ''}`;
 }

@@ -84,3 +84,6 @@ pre { white-space: pre-wrap; word-break: break-word; font-size: .85rem; backgrou
 .actiuni button { min-height: 40px; padding: 6px 12px; }
 .actiuni .incaseaza { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 .ok { font-weight: 600; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; text-align: center; }
+.poza { width: 100%; max-height: 40vh; object-fit: contain; border-radius: 10px; margin-top: 12px; background: var(--surface); }
+.eroare { color: var(--danger); }

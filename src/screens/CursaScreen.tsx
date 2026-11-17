@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { go } from '../router';
-import { deleteCursa, saveCursa, saveRezervare, useStore } from '../store';
-import { arePlataIncasata, fmtData, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
+import { deleteCursa, newId, saveBilet, saveCursa, saveRezervare, useStore } from '../store';
+import { arePlataIncasata, fmtMoment, fmtData, fmtSumaBilet, textCheltuieli, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Incasare } from '../incasare';
 import { parseMesaje } from '../parser';
 import { aplicaPeCursa, rezervareDinExtras } from '../importa';
@@ -42,12 +42,13 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
 }
 
 export function CursaScreen({ id }: { id: string }) {
-  const { curse, rezervari, masini } = useStore();
+  const { curse, rezervari, masini, bilete } = useStore();
   const [adauga, setAdauga] = useState('');
   const cursa = curse.find((c) => c.id === id);
   if (!cursa) return <Screen title="Cursă" backTo="/"><p class="empty">Cursa nu există.</p></Screen>;
 
   const ale = rezervari.filter((r) => r.cursaId === id);
+  const aleBilete = bilete.filter((b) => b.cursaId === id);
   const dus = ale.filter((r) => r.directie === 'dus');
   const retur = ale.filter((r) => r.directie === 'retur');
   const set = (patch: Partial<typeof cursa>) => saveCursa({ ...cursa, ...patch });
@@ -57,6 +58,17 @@ export function CursaScreen({ id }: { id: string }) {
     for (const e of rezultat.rezervari) await saveRezervare(rezervareDinExtras(id, e));
     await saveCursa(aplicaPeCursa(cursa!, rezultat));
     setAdauga('');
+  }
+
+  async function scaneaza(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const foto = input.files?.[0];
+    input.value = '';
+    if (!foto) return;
+    const acum = Date.now();
+    const bid = newId();
+    await saveBilet({ id: bid, cursaId: id, creat: acum, modificat: acum, moneda: 'HUF', foto });
+    go(`/bilet/${bid}`);
   }
 
   async function sterge() {
@@ -105,6 +117,32 @@ export function CursaScreen({ id }: { id: string }) {
 
       <Sectiune titlu={`Dus: Timișoara → ${cursa.destinatie || '?'}`} lista={dus} />
       <Sectiune titlu={`Retur: ${cursa.destinatie || '?'} → Timișoara`} lista={retur} />
+
+      <h2 class="day">Bilete aeroport</h2>
+      {aleBilete.map((b) => (
+        <button key={b.id} class="card" onClick={() => go(`/bilet/${b.id}`)}>
+          <strong>{b.suma ? fmtSumaBilet(b.suma, b.moneda) : 'Bilet (sumă necitită)'}</strong>
+          <span class="muted">
+            {b.intrare ? fmtMoment(b.intrare) : '?'} → {b.iesire ? fmtMoment(b.iesire) : '?'}
+          </span>
+        </button>
+      ))}
+      <div class="row">
+        <label class="btn grow">
+          Fă poză biletului
+          <input type="file" accept="image/*" capture="environment" hidden onChange={scaneaza} />
+        </label>
+        <label class="btn">
+          Din galerie
+          <input type="file" accept="image/*" hidden onChange={scaneaza} />
+        </label>
+      </div>
+      {aleBilete.length > 0 && (
+        <div class="total">
+          <span>Cheltuieli de decontat</span>
+          <strong>{textCheltuieli(aleBilete)}</strong>
+        </div>
+      )}
 
       <Field label="Adaugă mesaje în cursă">
         <textarea

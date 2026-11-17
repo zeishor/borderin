@@ -4,13 +4,16 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
-    "build": "tsc --noEmit && vite build",
+    "dev": "node scripts/copy-ocr.mjs && vite --host",
+    "build": "node scripts/copy-ocr.mjs && tsc --noEmit && vite build",
     "preview": "vite preview --host",
-    "test": "vitest run"
+    "test": "vitest run",
+    "postinstall": "node scripts/copy-ocr.mjs"
   },
   "dependencies": {
-    "preact": "^11.2.0"
+    "@tesseract.js-data/eng": "^1.0.0",
+    "preact": "^11.2.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.6",

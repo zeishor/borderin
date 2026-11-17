@@ -1,6 +1,6 @@
 const DB_NAME = 'borderin';
-const DB_VERSION = 1;
-export const STORES = ['curse', 'rezervari', 'masini', 'setari'] as const;
+const DB_VERSION = 2;
+export const STORES = ['curse', 'rezervari', 'masini', 'setari', 'bilete'] as const;
 export type StoreName = (typeof STORES)[number];
 
 let dbPromise: Promise<IDBDatabase> | null = null;

@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'preact/hooks';
 import { getAll, put, remove } from './db';
-import type { Cursa, Masina, Rezervare, Setari } from './types';
+import type { Bilet, Cursa, Masina, Rezervare, Setari } from './types';
 
 interface State {
   curse: Cursa[];
   rezervari: Rezervare[];
   masini: Masina[];
   setari: Setari;
+  bilete: Bilet[];
 }
 
 const SETARI_ID = 'setari';
 const SETARI_IMPLICITE: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5 };
 
-let state: State = { curse: [], rezervari: [], masini: [], setari: SETARI_IMPLICITE };
+let state: State = { curse: [], rezervari: [], masini: [], setari: SETARI_IMPLICITE, bilete: [] };
 const listeners = new Set<() => void>();
 
 function update(next: Partial<State>) {
@@ -25,17 +26,19 @@ export function newId(): string {
 }
 
 export async function initStore(): Promise<void> {
-  const [curse, rezervari, masini, setari] = await Promise.all([
+  const [curse, rezervari, masini, setari, bilete] = await Promise.all([
     getAll<Cursa>('curse'),
     getAll<Rezervare>('rezervari'),
     getAll<Masina>('masini'),
     getAll<Setari & { id: string }>('setari'),
+    getAll<Bilet>('bilete'),
   ]);
   const salvate = setari.find((s) => s.id === SETARI_ID);
   update({
     curse,
     rezervari,
     masini,
+    bilete,
     setari: salvate
       ? { pragExtraOre: salvate.pragExtraOre, drumInapoiOre: salvate.drumInapoiOre }
       : SETARI_IMPLICITE,
@@ -69,10 +72,12 @@ export async function saveCursa(c: Cursa): Promise<void> {
 export async function deleteCursa(id: string): Promise<void> {
   const ale = state.rezervari.filter((r) => r.cursaId === id);
   await Promise.all(ale.map((r) => remove('rezervari', r.id)));
+  await Promise.all(state.bilete.filter((b) => b.cursaId === id).map((b) => remove('bilete', b.id)));
   await remove('curse', id);
   update({
     curse: state.curse.filter((c) => c.id !== id),
     rezervari: state.rezervari.filter((r) => r.cursaId !== id),
+    bilete: state.bilete.filter((b) => b.cursaId !== id),
   });
 }
 
@@ -100,4 +105,15 @@ export async function deleteMasina(id: string): Promise<void> {
 export async function saveSetari(s: Setari): Promise<void> {
   await put('setari', { id: SETARI_ID, ...s });
   update({ setari: s });
+}
+
+export async function saveBilet(b: Bilet): Promise<void> {
+  const next = { ...b, modificat: Date.now() };
+  await put('bilete', next);
+  update({ bilete: upsert(state.bilete, next) });
+}
+
+export async function deleteBilet(id: string): Promise<void> {
+  await remove('bilete', id);
+  update({ bilete: state.bilete.filter((b) => b.id !== id) });
 }

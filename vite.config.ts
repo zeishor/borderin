@@ -8,6 +8,17 @@ export default defineConfig({
     preact(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // Fișierele OCR sunt mari: se descarcă la prima scanare, nu la instalare.
+        globIgnores: ['tesseract/**'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.includes('/tesseract/'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'ocr', expiration: { maxEntries: 10 } },
+          },
+        ],
+      },
       manifest: {
         name: 'Borderin',
         short_name: 'Borderin',

@@ -9,3 +9,4 @@ dist/
 
 # exemple reale cu date de clienți (nume, telefoane) — nu se urcă în repo
 samples/private/
+public/tesseract/

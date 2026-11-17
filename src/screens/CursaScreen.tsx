@@ -3,9 +3,9 @@ import { go } from '../router';
 import { deleteCursa, saveCursa, saveRezervare, useStore } from '../store';
 import { fmtData, textIncasat, titluCursa } from '../format';
 import { parseMesaje } from '../parser';
+import { aplicaPeCursa, rezervareDinExtras } from '../importa';
 import { Field, Screen } from '../ui';
-import { rezervareNoua } from './CursaNoua';
-import type { Directie, Rezervare } from '../types';
+import type { Rezervare } from '../types';
 
 function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
   const sortate = [...props.lista].sort((a, b) => (a.ora ?? '').localeCompare(b.ora ?? ''));
@@ -43,8 +43,10 @@ export function CursaScreen({ id }: { id: string }) {
   const retur = ale.filter((r) => r.directie === 'retur');
   const set = (patch: Partial<typeof cursa>) => saveCursa({ ...cursa, ...patch });
 
-  async function adaugaMesaje(directie: Directie) {
-    for (const e of parseMesaje(adauga)) await saveRezervare(rezervareNoua(id, { ...e, directie }));
+  async function adaugaMesaje() {
+    const rezultat = parseMesaje(adauga);
+    for (const e of rezultat.rezervari) await saveRezervare(rezervareDinExtras(id, e));
+    await saveCursa(aplicaPeCursa(cursa!, rezultat));
     setAdauga('');
   }
 
@@ -97,14 +99,9 @@ export function CursaScreen({ id }: { id: string }) {
           onInput={(e) => setAdauga(e.currentTarget.value)}
         />
       </Field>
-      <div class="row">
-        <button class="primary" disabled={!adauga.trim()} onClick={() => adaugaMesaje('dus')}>
-          Adaugă la dus
-        </button>
-        <button class="primary" disabled={!adauga.trim()} onClick={() => adaugaMesaje('retur')}>
-          Adaugă la retur
-        </button>
-      </div>
+      <button class="primary" disabled={!adauga.trim()} onClick={adaugaMesaje}>
+        Adaugă mesajele
+      </button>
 
       <Field label="Note">
         <textarea rows={3} value={cursa.note ?? ''} onInput={(e) => set({ note: e.currentTarget.value || undefined })} />

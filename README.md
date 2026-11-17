@@ -2,9 +2,9 @@
 
 Aplicație personală pentru un șofer de transport persoane (Timișoara – Budapesta / aeroport și alte curse): transformă mesajele dispecerului în curse, ține evidența plăților, a cheltuielilor de decontat și a cursei „extra".
 
-Stadiu: ecranele de bază funcționează (listă curse, cursă nouă, cursă, rezervare, setări mașini), cu date locale. Parserul de mesaje e provizoriu: fiecare rând lipit devine o rezervare cu textul în observații. Tichet, plăți detaliate, calcul „extra" și raport urmează.
+Stadiu: ecranele de bază și parserul de mesaje funcționează, cu date locale. Parserul (`src/parser.ts`, teste în `src/parser.test.ts`) recunoaște rezervări în format tabel (cu sau fără prefix WhatsApp), telefoane (cu etichete), data, ora, zbor, rută/direcție, plată, mesajul de plecare al dispecerului și telefoane trimise separat. Mesajele pe mai multe rânduri fără prefix WhatsApp nu sunt legate între ele. Tichet, calcul „extra" și raport urmează.
 
-Rulare: `npm install`, apoi `npm run dev` (sau `npm run build` pentru PWA).
+Rulare: `npm install`, apoi `npm run dev`; teste: `npm test`; publicare pe GitHub Pages: `./deploy.sh`.
 
 ## Contextul
 

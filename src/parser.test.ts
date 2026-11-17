@@ -311,3 +311,10 @@ describe('adrese din celula de pasageri', () => {
     expect(r.lasare).toBe('Timisoara, str. Test, nr.16, sc.A');
   });
 });
+
+describe('destinație scrisă greșit în mesaj', () => {
+  it('dus Timișoara–Arad cu „Timisoara" în coloana de destinație', () => {
+    const r = parseMesaje(t('Ana', 'Prob', '0700000070', '2026-11-15', 'Timisoara-Arad', 'Strada Test 13, Bloc V7', '', '13:50 Wizz Roma', 'Timisoara', 'Achitat in banca'), AZI).rezervari[0];
+    expect(r).toMatchObject({ preluare: 'Strada Test 13, Bloc V7', lasare: 'Aeroport Arad', directie: 'dus' });
+  });
+});

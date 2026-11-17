@@ -382,6 +382,10 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
     break;
   }
 
+  // „Timisoara" singur ca lăsare la dus (sau ca preluare la retur) e o scăpare în mesaj: e orașul de plecare.
+  if (directie === 'dus' && lasare && norm(lasare) === 'timisoara') lasare = undefined;
+  if (directie === 'retur' && preluare && norm(preluare) === 'timisoara') preluare = undefined;
+
   // Fără adresă scrisă: la dus se pleacă din Timișoara spre aeroportul destinației,
   // la retur se pleacă de la aeroportul destinației spre Timișoara.
   if (ruta && destinatie) {

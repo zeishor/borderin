@@ -333,6 +333,19 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
   if (!lasare && ruta?.lasare) lasare = ruta.lasare;
   if (!destinatie && lasare) destinatie = lasare.split(',')[0].trim();
 
+  // Fără adresă scrisă: la dus se pleacă din Timișoara spre aeroportul destinației,
+  // la retur se pleacă de la aeroportul destinației spre Timișoara.
+  if (ruta && destinatie) {
+    const aeroport = `Aeroport ${titluDacaMajuscule(destinatie)}`;
+    if (directie === 'dus') {
+      preluare ??= 'Timisoara';
+      lasare ??= aeroport;
+    } else {
+      preluare ??= aeroport;
+      lasare ??= 'Timisoara';
+    }
+  }
+
   const pax = original.match(/(\d+)\s*pax/i);
 
   return {

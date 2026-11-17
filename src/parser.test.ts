@@ -267,3 +267,26 @@ describe('formate de prefix WhatsApp', () => {
     expect(r.rezervari[0]).toMatchObject({ nume: 'Ion Exemplu', directie: 'retur', data: '2026-11-16', ora: '10:30' });
   });
 });
+
+describe('adrese implicite când mesajul nu le scrie', () => {
+  const rand = (ruta: string) => parseMesaje(t('Ion', 'Prob', '0700000050', '2026-11-16', ruta, '', '', '10:30 Zbor', '', '40 euro'), AZI).rezervari[0];
+
+  it('retur: de la aeroport spre Timișoara', () => {
+    expect(rand('Budapesta-Timisoara')).toMatchObject({ preluare: 'Aeroport Budapesta', lasare: 'Timisoara' });
+  });
+  it('dus: din Timișoara spre aeroport', () => {
+    expect(rand('Timisoara-Budapesta')).toMatchObject({ preluare: 'Timisoara', lasare: 'Aeroport Budapesta' });
+  });
+  it('Budapesta–Arad: de la aeroportul Budapesta la Arad', () => {
+    expect(rand('Budapesta-Arad')).toMatchObject({ preluare: 'Aeroport Budapesta', lasare: 'Arad' });
+  });
+  it('adresa scrisă are prioritate', () => {
+    const r = parseMesaje(t('Ion', 'Prob', '0700000051', '2026-11-16', 'Budapesta-Timisoara', '', '', '10:30 Zbor', 'Str Reala 3', '40 euro'), AZI).rezervari[0];
+    expect(r).toMatchObject({ preluare: 'Aeroport Budapesta', lasare: 'Str Reala 3' });
+  });
+  it('fără rută nu se inventează nimic', () => {
+    const r = parseMesaje('Ion Liber 0700 000 052 mâine 10:30', AZI).rezervari[0];
+    expect(r.preluare).toBeUndefined();
+    expect(r.lasare).toBeUndefined();
+  });
+});

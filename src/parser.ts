@@ -143,13 +143,24 @@ function esteCelulaPlata(c: string): boolean {
   return /(\d+(?:[.,]\d+)?)\s*(?:de\s+)?(euro|eur|lei|ron|€)/i.test(c) || CUVINTE_PLATA.test(c);
 }
 
+/** Un rând cu multe coloane (rezervare întreagă pe un singur rând). */
+function esteRandComplet(linie: string): boolean {
+  return linie.split('\t').length >= 6;
+}
+
 function imparteMesaje(text: string): Mesaj[] {
   const linii = text.split(/\r?\n/).map((l) => l.replace(/\s+$/, ''));
   const cuPrefix = linii.some((l) => PREFIX.test(l.trim()));
   const mesaje: Mesaj[] = [];
+  // Fără prefix WhatsApp: rândurile-fragment (puține coloane) ale aceluiași mesaj se lipesc
+  // între ele, până la un rând complet, un telefon singur, o plecare sau un rând gol.
+  let grupDeschis = false;
 
   for (const linie of linii) {
-    if (!linie.trim()) continue;
+    if (!linie.trim()) {
+      grupDeschis = false;
+      continue;
+    }
     const l = linie.replace(/^ +/, '');
     const p = l.match(PREFIX);
     if (p) {
@@ -159,8 +170,14 @@ function imparteMesaje(text: string): Mesaj[] {
       });
     } else if (cuPrefix && mesaje.length) {
       mesaje[mesaje.length - 1].text += '\t' + l;
+    } else if (esteRandComplet(l) || esteTelefonSingur(l.trim()) || (!l.includes('\t') && /plec/i.test(l))) {
+      mesaje.push({ text: l });
+      grupDeschis = false;
+    } else if (grupDeschis) {
+      mesaje[mesaje.length - 1].text += '\t' + l;
     } else {
       mesaje.push({ text: l });
+      grupDeschis = l.includes('\t');
     }
   }
   return mesaje;
@@ -195,33 +212,29 @@ export function parseRuta(c: string): { directie: Directie; destinatie: string; 
   return { directie: 'retur', destinatie: curataLoc(a), lasare: curataLoc(b) };
 }
 
-function parseRezervare(cells: string[], original: string): RezervareExtrasa {
+function parseRezervare(cells: string[], original: string, trimis: string): RezervareExtrasa {
   const idxTel = cells.findIndex(esteCelulaTelefon);
   const idxRuta = cells.findIndex((c, i) => i !== idxTel && !!parseRuta(c));
   const ruta = idxRuta >= 0 ? parseRuta(cells[idxRuta]) : undefined;
+
   const nume: string[] = [];
   const note: string[] = [];
   const telefoane: Telefon[] = [];
-  let eticheta: string[] = [];
+  const eticheta: string[] = [];
   let numeDinTelefon: string | undefined;
+  let data: string | undefined;
+  let dataRelativa: string | undefined;
+  let directieCuvant: Directie | undefined;
+  let ora: string | undefined;
+  let zbor: string | undefined;
+  let preluare: string | undefined;
+  let lasare: string | undefined;
+  let plata: Plata | undefined;
+  let destinatie: string | undefined = ruta?.destinatie;
 
-  for (const [i, c] of cells.slice(0, idxTel).entries()) {
-    if (!c || i === idxRuta) continue;
-    if (/pax/i.test(c)) {
-      note.push(c);
-      continue;
-    }
-    const m = c.match(/^(.*?)\s+-\s+([A-ZĂÂÎȘȚ]{3,})$/);
-    if (m) {
-      nume.push(titluDacaMajuscule(m[1]));
-      eticheta.push(m[2]);
-    } else {
-      nume.push(titluDacaMajuscule(c));
-    }
-  }
-
+  const numeFaraTelefon = cells.slice(0, idxTel).some((c, i) => c && i !== idxRuta && !esteMetadata(c));
   for (const [i, t] of extrageTelefoane(cells[idxTel]).entries()) {
-    if (i === 0 && t.eticheta && nume.length === 0) {
+    if (i === 0 && t.eticheta && !numeFaraTelefon) {
       numeDinTelefon = titluDacaMajuscule(t.eticheta);
       adaugaTelefon(telefoane, { numar: t.numar });
     } else {
@@ -229,23 +242,23 @@ function parseRezervare(cells: string[], original: string): RezervareExtrasa {
     }
   }
 
-  let data: string | undefined;
-  const directie: Directie | undefined = ruta?.directie;
-  let destinatie: string | undefined = ruta?.destinatie;
-  const lasareRuta: string | undefined = ruta?.lasare;
-  let ora: string | undefined;
-  let zbor: string | undefined;
-  let preluare: string | undefined;
-  let lasare: string | undefined;
-  let plata: Plata | undefined;
-
-  for (const [j, c] of cells.slice(idxTel + 1).entries()) {
-    if (!c || idxTel + 1 + j === idxRuta) continue;
+  cells.forEach((c, i) => {
+    if (!c || i === idxTel || i === idxRuta) return;
+    const dupaTelefon = i > idxTel;
 
     const d = parseData(c);
     if (d && !data) {
       data = d;
-      continue;
+      return;
+    }
+
+    const cuvant = c.match(/^(retur|dus)\b\s*(.*)$/i);
+    if (cuvant && c.length < 25 && /^(azi|ast[aă]zi|m[aâ]ine|poim[aâ]ine)?$/i.test(cuvant[2].trim())) {
+      directieCuvant = cuvant[1].toLowerCase() as Directie;
+      if (/poim/i.test(cuvant[2])) dataRelativa = adaugaZile(trimis, 2);
+      else if (/m[aâ]ine/i.test(cuvant[2])) dataRelativa = adaugaZile(trimis, 1);
+      else if (cuvant[2].trim()) dataRelativa = trimis;
+      return;
     }
 
     const t = c.match(/^(\d{1,2})[:;.](\d{2})\b\s*(.*)$/);
@@ -254,32 +267,44 @@ function parseRezervare(cells: string[], original: string): RezervareExtrasa {
       const rest = t[3].replace(/^[\s,;-]+/, '').replace(/\s*,\s*/g, ', ').trim();
       if (/^(preluare|decolare|aterizare)$/i.test(rest)) note.push(`Ora: ${rest.toLowerCase()}`);
       else if (rest) zbor = rest;
-      continue;
+      return;
     }
 
     if (!plata && esteCelulaPlata(c)) {
       plata = parsePlata(c);
-      continue;
+      return;
     }
 
     if (/pax|bagaj|\btel\b/i.test(c) || c.length > 60) {
       note.push(c);
       for (const tel of telefoaneDinText(c)) adaugaTelefon(telefoane, tel);
-      continue;
+      return;
     }
 
     if (norm(c) === 'altele') {
       note.push('Tip: altele');
-      continue;
+      return;
+    }
+
+    if (!dupaTelefon) {
+      const m = c.match(/^(.*?)\s+-\s+([A-ZĂÂÎȘȚ]{3,})$/);
+      if (m) {
+        nume.push(titluDacaMajuscule(m[1]));
+        eticheta.push(m[2]);
+      } else {
+        nume.push(titluDacaMajuscule(c));
+      }
+      return;
     }
 
     if (plata) eticheta.push(c);
     else if (ora) lasare ??= c;
     else if (!preluare) preluare = c;
     else note.push(c);
-  }
+  });
 
-  if (!lasare && lasareRuta) lasare = lasareRuta;
+  const directie = ruta?.directie ?? directieCuvant;
+  if (!lasare && ruta?.lasare) lasare = ruta.lasare;
   if (!destinatie && lasare) destinatie = lasare.split(',')[0].trim();
 
   const pax = original.match(/(\d+)\s*pax/i);
@@ -296,10 +321,23 @@ function parseRezervare(cells: string[], original: string): RezervareExtrasa {
     eticheta: eticheta.length ? eticheta.join(', ') : undefined,
     plata: plata ?? { stare: 'de_incasat', moneda: 'EUR' },
     textOriginal: original,
-    data,
+    data: data ?? dataRelativa,
     directie,
     destinatie,
   };
+}
+
+/** Celulă care nu poate fi nume: dată, oră, plată, rută sau cuvânt de direcție. */
+function esteMetadata(c: string): boolean {
+  return (
+    !!parseData(c) ||
+    /^\d{1,2}[:;.]\d{2}\b/.test(c) ||
+    esteCelulaPlata(c) ||
+    !!parseRuta(c) ||
+    /^(retur|dus)\b/i.test(c) ||
+    /pax|bagaj|\btel\b/i.test(c) ||
+    c.length > 60
+  );
 }
 
 /** Rezervare dintr-un rând fără coloane (text liber) care conține un telefon. */
@@ -338,7 +376,7 @@ export function parseMesaje(text: string, astazi: string = azi()): Rezultat {
     }
 
     if (celule.length >= 3 && celule.some(esteCelulaTelefon)) {
-      rezultat.rezervari.push(parseRezervare(celule, mesaj.text));
+      rezultat.rezervari.push(parseRezervare(celule, mesaj.text, mesaj.trimis ?? astazi));
       continue;
     }
 

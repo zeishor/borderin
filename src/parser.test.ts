@@ -203,3 +203,39 @@ describe('ruta (oraș preluare - oraș destinație)', () => {
     expect(r.nume).toBe('Ion Probe');
   });
 });
+
+describe('mesaj pe mai multe rânduri, fără prefix WhatsApp', () => {
+  const mesaj = ['retur maine \t16-11-26\t', '10:30 FR0000 ', 'ION EXEMPLU\t+39 340 000 0099\t', 'Budapesta – Timisoara', 'achita 40 euro'].join('\n');
+
+  it('rândurile fragment formează o singură rezervare', () => {
+    const r = parseMesaje(mesaj, AZI);
+    expect(r.rezervari).toHaveLength(1);
+    expect(r.note).toEqual([]);
+    const x = r.rezervari[0];
+    expect(x.nume).toBe('Ion Exemplu');
+    expect(x.telefoane[0].numar).toBe('+39 340 000 0099');
+    expect(x.data).toBe('2026-11-16');
+    expect(x.ora).toBe('10:30');
+    expect(x.zbor).toBe('FR0000');
+    expect(x.directie).toBe('retur');
+    expect(x.destinatie).toBe('Budapesta');
+    expect(x.plata).toMatchObject({ stare: 'de_incasat', suma: 40, moneda: 'EUR' });
+  });
+
+  it('un rând gol desparte două mesaje fragmentate', () => {
+    const r = parseMesaje(mesaj + '\n\n' + mesaj.replace('ION EXEMPLU', 'ANA PROBA').replace('0099', '0098'), AZI);
+    expect(r.rezervari.map((x) => x.nume)).toEqual(['Ion Exemplu', 'Ana Proba']);
+  });
+
+  it('un rând complet după fragmente nu se lipește de ele', () => {
+    const complet = t('Max', 'Probe', '0700000030', '2026-11-14', 'Timisoara-Budapesta', '', '', '10:00', '', '40 euro');
+    const r = parseMesaje(mesaj + '\n' + complet, AZI);
+    expect(r.rezervari.map((x) => x.nume)).toEqual(['Ion Exemplu', 'Max Probe']);
+  });
+
+  it('„retur maine" fără dată explicită folosește ziua de azi + 1', () => {
+    const r = parseMesaje(['retur maine\t-', 'ION EXEMPLU\t+39 340 000 0099\t', 'Budapesta – Timisoara'].join('\n'), AZI);
+    expect(r.rezervari[0].data).toBe('2026-11-18');
+    expect(r.rezervari[0].directie).toBe('retur');
+  });
+});

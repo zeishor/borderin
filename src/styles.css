@@ -77,3 +77,4 @@ button.danger { color: var(--danger); width: 100%; margin-top: 24px; }
 a.wa { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
 details { margin-top: 16px; }
 pre { white-space: pre-wrap; word-break: break-word; font-size: .85rem; background: var(--surface); padding: 12px; border-radius: 10px; }
+.adrese { font-size: .9rem; overflow-wrap: anywhere; }

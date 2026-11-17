@@ -25,6 +25,11 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
             {r.pasageri} pax{r.zbor ? ` · ${r.zbor}` : ''}
             {r.eticheta ? ` · ${r.eticheta}` : ''}
           </span>
+          {(r.preluare || r.lasare) && (
+            <span class="adrese">
+              {r.preluare || '?'} → {r.lasare || '?'}
+            </span>
+          )}
           <span>{r.plata.stare === 'achitat' ? 'Achitat' : `De încasat: ${textIncasat([r])}`}</span>
         </button>
       ))}

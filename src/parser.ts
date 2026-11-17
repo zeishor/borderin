@@ -116,6 +116,14 @@ function adaugaTelefon(lista: Telefon[], t: Telefon) {
   if (!lista.some((x) => waDigits(x.numar) === cheie)) lista.push(t);
 }
 
+/** Toate sumele cu monedă dintr-un text, ex. „40 euro / 220 lei". */
+export function sumeDinText(text: string): { suma: number; moneda: Moneda }[] {
+  return [...text.matchAll(BANI)].map((m) => ({
+    suma: Number(m[1].replace(',', '.')),
+    moneda: /^(lei|ron)$/i.test(m[2]) ? 'RON' : 'EUR',
+  }));
+}
+
 export function parsePlata(celula: string): Plata {
   const sume = [...celula.matchAll(BANI)];
   const prima = sume[0];

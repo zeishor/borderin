@@ -1,6 +1,6 @@
 import { go } from '../router';
 import { useStore } from '../store';
-import { fmtData, textIncasat, titluCursa, totalPasageri } from '../format';
+import { arePlataIncasata, fmtData, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Screen } from '../ui';
 
 export function ListaCurse() {
@@ -39,7 +39,10 @@ export function ListaCurse() {
                   {ale.length} rezervări · {totalPasageri(ale)} pax · {masina ? masina.nume : 'fără mașină'}
                   {c.plecare ? ` · plecare ${c.plecare}` : ''}
                 </span>
-                <span>De încasat: {textIncasat(ale)}</span>
+                <span>
+                  De încasat: {textDeIncasat(ale)}
+                  {arePlataIncasata(ale) ? ` · Încasat: ${textIncasat(ale)}` : ''}
+                </span>
               </button>
             );
           })}

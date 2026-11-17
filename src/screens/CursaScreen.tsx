@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks';
 import { go } from '../router';
 import { deleteCursa, saveCursa, saveRezervare, useStore } from '../store';
-import { fmtData, textIncasat, titluCursa, totalPasageri } from '../format';
+import { arePlataIncasata, fmtData, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
+import { Incasare } from '../incasare';
 import { parseMesaje } from '../parser';
 import { aplicaPeCursa, rezervareDinExtras } from '../importa';
 import { Field, Screen } from '../ui';
@@ -16,7 +17,8 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
       </h2>
       {sortate.length === 0 && <p class="muted">Nimic aici.</p>}
       {sortate.map((r) => (
-        <button key={r.id} class="card" onClick={() => go(`/rezervare/${r.id}`)}>
+        <div key={r.id} class="card-wrap">
+        <button class="card" onClick={() => go(`/rezervare/${r.id}`)}>
           <strong>
             {r.ora ? `${r.ora} · ` : ''}
             {r.nume || '(fără nume)'}
@@ -30,8 +32,10 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
               {r.preluare || '?'} → {r.lasare || '?'}
             </span>
           )}
-          <span>{r.plata.stare === 'achitat' ? 'Achitat' : `De încasat: ${textIncasat([r])}`}</span>
+          <span>{r.plata.stare === 'achitat' ? 'Achitat' : `De încasat: ${textDeIncasat([r])}`}</span>
         </button>
+        <Incasare r={r} />
+        </div>
       ))}
     </section>
   );
@@ -90,8 +94,14 @@ export function CursaScreen({ id }: { id: string }) {
 
       <div class="total">
         <span>De încasat</span>
-        <strong>{textIncasat(ale)}</strong>
+        <strong>{textDeIncasat(ale)}</strong>
       </div>
+      {arePlataIncasata(ale) && (
+        <div class="total">
+          <span>Încasat (de predat firmei)</span>
+          <strong>{textIncasat(ale)}</strong>
+        </div>
+      )}
 
       <Sectiune titlu={`Dus: Timișoara → ${cursa.destinatie || '?'}`} lista={dus} />
       <Sectiune titlu={`Retur: ${cursa.destinatie || '?'} → Timișoara`} lista={retur} />

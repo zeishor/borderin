@@ -78,3 +78,9 @@ a.wa { color: var(--accent); font-weight: 600; text-decoration: none; white-spac
 details { margin-top: 16px; }
 pre { white-space: pre-wrap; word-break: break-word; font-size: .85rem; background: var(--surface); padding: 12px; border-radius: 10px; }
 .adrese { font-size: .9rem; overflow-wrap: anywhere; }
+.card-wrap { margin-bottom: 8px; }
+.card-wrap .card { margin-bottom: 4px; }
+.actiuni { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 4px; }
+.actiuni button { min-height: 40px; padding: 6px 12px; }
+.actiuni .incaseaza { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.ok { font-weight: 600; }

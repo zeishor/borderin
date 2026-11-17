@@ -15,6 +15,8 @@ export interface Plata {
   moneda: Moneda;
   /** Prețul așa cum e scris în mesaj, ex. „40 euro / 220 lei". */
   notaPret?: string;
+  /** Ce a plătit efectiv clientul șoferului (ex. alege lei în loc de euro). */
+  incasat?: { suma: number; moneda: Moneda };
 }
 
 export interface Rezervare {

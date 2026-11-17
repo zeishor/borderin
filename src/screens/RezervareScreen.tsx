@@ -1,6 +1,7 @@
 import { back } from '../router';
 import { deleteRezervare, saveRezervare, useStore } from '../store';
 import { waLink } from '../phone';
+import { Incasare } from '../incasare';
 import { Field, Screen } from '../ui';
 import type { Directie, Moneda, Plata, Rezervare, StarePlata, Telefon } from '../types';
 
@@ -108,6 +109,8 @@ export function RezervareScreen({ id }: { id: string }) {
       <Field label="Preț scris în mesaj">
         <input value={r.plata.notaPret ?? ''} onInput={(e) => setPlata({ notaPret: e.currentTarget.value || undefined })} />
       </Field>
+
+      <Incasare r={r} />
 
       {r.textOriginal && (
         <details>

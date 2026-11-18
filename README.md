@@ -23,6 +23,7 @@ Rulare: `npm install`, apoi `npm run dev`; teste: `npm test`; publicare pe GitHu
 - Are: mașină, rezervări (dus și retur), tichet(e) și cheltuieli, total de încasat, durată totală.
 
 **Rezervare** (client într-o cursă)
+- Zbor: cod (ex. FR5249, W6 2289) și oraș/aeroport, extrase din mesajul dispecerului (coloana de oră sau oriunde în text), afișate pe card.
 - Nume (o singură valoare, ordinea prenume/nume nu e fixă), unul sau mai multe telefoane cu etichetă, număr de pasageri, pasageri cu nume/telefon/bagaje, locuri de preluare și lăsare, ora (zbor sau preluare), zbor/oraș, observații.
 - Plată: de încasat (sume posibile, lei/euro) sau achitat (bancă, OP, factură). Modul de plată decide, nu prezența prețului.
 - Păstrează textul original al mesajului.

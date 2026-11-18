@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseMesaje, parseRuta } from './parser';
+import { parseMesaje, parseRuta, parseZbor } from './parser';
 
 // Date inventate; doar structura imită mesajele reale.
 const t = (...c: string[]) => c.join('\t');
@@ -17,7 +17,8 @@ describe('rezervări de aeroport', () => {
     expect(r.directie).toBe('retur');
     expect(r.destinatie).toBe('Budapesta');
     expect(r.ora).toBe('10:30');
-    expect(r.zbor).toBe('Cagliari');
+    expect(r.zbor).toBeUndefined();
+    expect(r.orasZbor).toBe('Cagliari');
     expect(r.lasare).toBe('Str Exemplu 9');
     expect(r.plata).toMatchObject({ stare: 'de_incasat', suma: 40, moneda: 'EUR' });
     expect(r.plata.notaPret).toBe('40 euro / 220 lei');
@@ -42,7 +43,8 @@ describe('rezervări de aeroport', () => {
     const r = parseMesaje(t('NICOLAS', 'ROSSI', '0700 000 002', '2026-11-15', 'Arad-Timisoara', 'AEROPORT ARAD', '', '12;55 LONDRA', '', '15 EURO'), AZI).rezervari[0];
     expect(r.nume).toBe('Nicolas Rossi');
     expect(r.ora).toBe('12:55');
-    expect(r.zbor).toBe('LONDRA');
+    expect(r.zbor).toBeUndefined();
+    expect(r.orasZbor).toBe('LONDRA');
     expect(r.preluare).toBe('AEROPORT ARAD');
 
     const s = parseMesaje(t('CRISTIAN', '-', '0700000003', '2026-11-14', 'Timisoara-Budapesta', 'GIROC-STR.DUNAREA 5', '', '17;40', '', '40 EURO/220 LEI'), AZI).rezervari[0];
@@ -89,7 +91,8 @@ describe('grup, mai multe telefoane, observații', () => {
     expect(r.telefoane.map((x) => x.numar)).toEqual(['+1816 000 0006', '+1818 000 0007', '0770 000 008']);
     expect(r.telefoane[2].eticheta).toBe('MARCEL PT URGENTE');
     expect(r.pasageri).toBe(2);
-    expect(r.zbor).toBe('LH 1678 (MUC)');
+    expect(r.zbor).toBe('LH 1678');
+    expect(r.orasZbor).toBe('MUC');
     expect(r.observatii).toContain('ANA LOPEZ');
   });
 
@@ -103,7 +106,8 @@ describe('grup, mai multe telefoane, observații', () => {
     expect(r.pasageri).toBe(3);
     expect(r.preluare).toBe('Sacalaz, Str. A 5 (Maria Prob) + Timisoara, Str. B (Ana Z)');
     expect(r.telefoane.map((x) => x.numar)).toContain('0762 000 010');
-    expect(r.zbor).toBe('W6 2289, STR');
+    expect(r.zbor).toBe('W6 2289');
+    expect(r.orasZbor).toBe('STR');
   });
 
   it('rând „altele": grup, telefon - nume, destinație, firmă', () => {
@@ -135,7 +139,8 @@ describe('mesaje WhatsApp și alte feluri de text', () => {
     const r = parseMesaje(text, AZI);
     expect(r.rezervari).toHaveLength(2);
     expect(r.rezervari[0].nume).toBe('Ion Unu');
-    expect(r.rezervari[1].zbor).toBe('FR4134 - (BRI)');
+    expect(r.rezervari[1].zbor).toBe('FR4134');
+    expect(r.rezervari[1].orasZbor).toBe('BRI');
     expect(r.rezervari[1].plata.metoda).toBe('cash');
   });
 
@@ -316,5 +321,32 @@ describe('destinație scrisă greșit în mesaj', () => {
   it('dus Timișoara–Arad cu „Timisoara" în coloana de destinație', () => {
     const r = parseMesaje(t('Ana', 'Prob', '0700000070', '2026-11-15', 'Timisoara-Arad', 'Strada Test 13, Bloc V7', '', '13:50 Wizz Roma', 'Timisoara', 'Achitat in banca'), AZI).rezervari[0];
     expect(r).toMatchObject({ preluare: 'Strada Test 13, Bloc V7', lasare: 'Aeroport Arad', directie: 'dus' });
+  });
+});
+
+describe('codul zborului', () => {
+  it('cod și oraș din celula de oră', () => {
+    expect(parseZbor('FR5249')).toEqual({ zbor: 'FR5249', orasZbor: undefined });
+    expect(parseZbor('LH 1334')).toEqual({ zbor: 'LH 1334', orasZbor: undefined });
+    expect(parseZbor('W6 2289, STR')).toEqual({ zbor: 'W6 2289', orasZbor: 'STR' });
+    expect(parseZbor('FR4133 , BRISTOL')).toEqual({ zbor: 'FR4133', orasZbor: 'BRISTOL' });
+    expect(parseZbor('fr 5249 (bri)')).toEqual({ zbor: 'FR 5249', orasZbor: 'bri' });
+    expect(parseZbor('Wizz Roma')).toEqual({ orasZbor: 'Wizz Roma' });
+    expect(parseZbor('LONDRA')).toEqual({ orasZbor: 'LONDRA' });
+  });
+
+  it('cod de zbor scris în altă parte a mesajului', () => {
+    const r = parseMesaje(t('Ion', 'Prob', '0700000080', '2026-11-16', 'Budapesta-Timisoara', '', 'Zbor Wizz W6 2289 aterizeaza intarziat', '10:30', '', '40 euro'), AZI).rezervari[0];
+    expect(r.zbor).toBe('W6 2289');
+  });
+
+  it('cod de zbor fără etichetă, în observații', () => {
+    const r = parseMesaje(t('Ion', 'Prob', '0700000081', '2026-11-16', 'Budapesta-Timisoara', '', '2 pax - vin cu FR5249', '10:30', '', '40 euro'), AZI).rezervari[0];
+    expect(r.zbor).toBe('FR5249');
+  });
+
+  it('nu confundă blocul, strada sau numărul de pasageri cu un zbor', () => {
+    const r = parseMesaje(t('Ana', 'Prob', '0700000082', '2026-11-16', 'Timisoara-Budapesta', 'Str. Florilor nr 5, BL 14, SC 123', '3 pax', '11:00', 'Aeroport Budapesta', 'Achitat'), AZI).rezervari[0];
+    expect(r.zbor).toBeUndefined();
   });
 });

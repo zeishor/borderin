@@ -30,7 +30,10 @@ export interface Rezervare {
   pasageri: number;
   /** HH:MM — ora zborului sau a preluării, cum scrie în mesaj. */
   ora?: string;
+  /** Codul zborului (ex. FR5249, W6 2289), pentru urmărirea întârzierilor. */
   zbor?: string;
+  /** Orașul/aeroportul zborului, cum scrie în mesaj (ex. Cagliari, STR, BRISTOL). */
+  orasZbor?: string;
   preluare?: string;
   lasare?: string;
   observatii?: string;

@@ -7,6 +7,7 @@ export interface RezervareExtrasa {
   pasageri: number;
   ora?: string;
   zbor?: string;
+  orasZbor?: string;
   preluare?: string;
   lasare?: string;
   observatii?: string;
@@ -285,6 +286,40 @@ function opriri(nota: string, locuri: string | undefined): string[] | undefined 
   return rezultat.length ? rezultat : undefined;
 }
 
+/** Cod de zbor în context sigur (după oră sau după „zbor"): 2 caractere IATA + 1–4 cifre, ex. FR5249, W6 2289. */
+const COD_ZBOR = /(?<![A-Za-z0-9])([A-Za-z][A-Za-z0-9]|[0-9][A-Za-z])(\s?)(\d{1,4})(?![A-Za-z0-9])/;
+/** Cod de zbor căutat oriunde în text: mai strict (majuscule, 3–4 cifre), ca să nu prindă „BL 14" sau „SC 123". */
+const COD_ZBOR_STRICT = /(?<![A-Za-z0-9])([A-Z][A-Z0-9])(\s?)(\d{3,4})(?![A-Za-z0-9])/;
+const NU_E_ZBOR = new Set(['SC', 'BL', 'NR', 'ET', 'AP', 'ST', 'SE', 'TM', 'TE', 'JD', 'SA']);
+
+function formeazaCod(m: RegExpMatchArray): string {
+  return `${m[1].toUpperCase()}${m[2] ? ' ' : ''}${m[3]}`;
+}
+
+/** Desparte „W6 2289, STR" în cod („W6 2289") și oraș/aeroport („STR"). */
+export function parseZbor(rest: string): { zbor?: string; orasZbor?: string } {
+  const m = rest.match(COD_ZBOR);
+  if (!m) return { orasZbor: rest.trim() || undefined };
+  const oras = rest
+    .replace(m[0], ' ')
+    .replace(/[(),;\-–—]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return { zbor: formeazaCod(m), orasZbor: oras || undefined };
+}
+
+function cautaCodZbor(text: string): string | undefined {
+  const etichetat = text.match(/(?:zbor|flight)\s*:?\s*(.{0,20})/i);
+  if (etichetat) {
+    const m = etichetat[1].match(COD_ZBOR);
+    if (m) return formeazaCod(m);
+  }
+  for (const m of text.matchAll(new RegExp(COD_ZBOR_STRICT.source, 'g'))) {
+    if (!NU_E_ZBOR.has(m[1])) return formeazaCod(m);
+  }
+  return undefined;
+}
+
 function parseRezervare(cells: string[], original: string, trimis: string): RezervareExtrasa {
   const idxTel = cells.findIndex(esteCelulaTelefon);
   const idxRuta = cells.findIndex((c, i) => i !== idxTel && !!parseRuta(c));
@@ -300,6 +335,7 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
   let directieCuvant: Directie | undefined;
   let ora: string | undefined;
   let zbor: string | undefined;
+  let orasZbor: string | undefined;
   let preluare: string | undefined;
   let lasare: string | undefined;
   let plata: Plata | undefined;
@@ -340,7 +376,7 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
       ora = normOra(t[1], t[2]);
       const rest = t[3].replace(/^[\s,;-]+/, '').replace(/\s*,\s*/g, ', ').trim();
       if (/^(preluare|decolare|aterizare)$/i.test(rest)) note.push(`Ora: ${rest.toLowerCase()}`);
-      else if (rest) zbor = rest;
+      else if (rest) ({ zbor, orasZbor } = parseZbor(rest));
       return;
     }
 
@@ -414,7 +450,8 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
     telefoane,
     pasageri: pax ? Number(pax[1]) : 1,
     ora,
-    zbor,
+    zbor: zbor ?? cautaCodZbor(original),
+    orasZbor,
     preluare,
     lasare,
     observatii: note.length ? note.join(' | ') : undefined,

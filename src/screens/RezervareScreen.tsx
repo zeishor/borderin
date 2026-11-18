@@ -14,7 +14,7 @@ export function RezervareScreen({ id }: { id: string }) {
   const setPlata = (patch: Partial<Plata>) => set({ plata: { ...r.plata, ...patch } });
   const setTel = (i: number, patch: Partial<Telefon>) =>
     set({ telefoane: r.telefoane.map((t, j) => (j === i ? { ...t, ...patch } : t)) });
-  const text = (k: 'zbor' | 'preluare' | 'lasare' | 'observatii' | 'eticheta') => ({
+  const text = (k: 'zbor' | 'orasZbor' | 'preluare' | 'lasare' | 'observatii' | 'eticheta') => ({
     value: r[k] ?? '',
     onInput: (e: Event) => set({ [k]: (e.currentTarget as HTMLInputElement).value || undefined }),
   });
@@ -45,8 +45,11 @@ export function RezervareScreen({ id }: { id: string }) {
         <Field label="Ora">
           <input type="time" value={r.ora ?? ''} onInput={(e) => set({ ora: e.currentTarget.value || undefined })} />
         </Field>
-        <Field label="Zbor / oraș">
+        <Field label="Cod zbor">
           <input {...text('zbor')} />
+        </Field>
+        <Field label="Zbor de la / către">
+          <input {...text('orasZbor')} />
         </Field>
       </div>
 

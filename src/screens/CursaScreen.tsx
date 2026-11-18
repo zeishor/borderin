@@ -24,7 +24,9 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
             {r.nume || '(fără nume)'}
           </strong>
           <span class="muted">
-            {r.pasageri} pax{r.zbor ? ` · ${r.zbor}` : ''}
+            {r.pasageri} pax
+            {r.zbor ? ` · ✈ ${r.zbor}` : ''}
+            {r.orasZbor ? ` · ${r.orasZbor}` : ''}
             {r.eticheta ? ` · ${r.eticheta}` : ''}
           </span>
           {(r.preluare || r.lasare) && (

@@ -37,6 +37,9 @@ export function Screen(props: {
             ←
           </button>
         )}
+        {props.backTo === undefined && (
+          <img class="logo" src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" width={36} height={36} />
+        )}
         <h1>{props.title}</h1>
         <div class="bar-action">{props.action}</div>
       </header>

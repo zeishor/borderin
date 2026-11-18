@@ -29,7 +29,7 @@ export function salveazaTracker(t: Tracker): void {
 /** Link de urmărire pentru un cod de zbor („W6 2289" → w62289). Gol dacă nu e cod. */
 export function linkZbor(cod: string, tracker: Tracker = trackerAles()): string | undefined {
   const c = cod.replace(/[^A-Za-z0-9]/g, '');
-  if (!c) return undefined;
+  if (!/^[A-Za-z0-9]{2}\d{1,4}$/.test(c)) return undefined;
   switch (tracker) {
     case 'flightradar24':
       return `https://www.flightradar24.com/data/flights/${c.toLowerCase()}`;

@@ -9,5 +9,7 @@ describe('linkZbor', () => {
   });
   it('fără cod nu dă link', () => {
     expect(linkZbor('  ', 'google')).toBeUndefined();
+    expect(linkZbor('Wizz Roma', 'google')).toBeUndefined();
+    expect(linkZbor('LONDRA', 'google')).toBeUndefined();
   });
 });

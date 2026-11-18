@@ -47,7 +47,7 @@ Rulare: `npm install`, apoi `npm run dev`; teste: `npm test`; publicare pe GitHu
 - Pragul și durata drumului înapoi sunt setări editabile, posibil pe destinație. Regula cu așteptarea de peste ~3 ore rămâne de clarificat.
 - Fără tichet de arrivals, sfârșitul se introduce manual.
 
-**Tichet:** poză, extragerea sumei, datei și orei, atașat cursei; folosit pentru decont și pentru ora de ieșire.
+**Tichet:** scanare automată cu camera (se oprește singură când citește suma și ora plății) sau din poză/galerie; OCR local (Tesseract), fără API; atașat cursei, folosit pentru decont și pentru ora de ieșire.
 
 ## Ecrane
 

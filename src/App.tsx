@@ -6,6 +6,7 @@ import { CursaScreen } from './screens/CursaScreen';
 import { RezervareScreen } from './screens/RezervareScreen';
 import { SetariScreen } from './screens/SetariScreen';
 import { BiletScreen } from './screens/BiletScreen';
+import { ScanScreen } from './screens/ScanScreen';
 
 export function App() {
   useStore();
@@ -15,6 +16,8 @@ export function App() {
   if (route === '/setari') return <SetariScreen />;
   const cursa = route.match(/^\/cursa\/(.+)$/);
   if (cursa) return <CursaScreen id={cursa[1]} />;
+  const scan = route.match(/^\/scaneaza\/(.+)$/);
+  if (scan) return <ScanScreen cursaId={scan[1]} />;
   const bilet = route.match(/^\/bilet\/(.+)$/);
   if (bilet) return <BiletScreen id={bilet[1]} />;
   const rez = route.match(/^\/rezervare\/(.+)$/);

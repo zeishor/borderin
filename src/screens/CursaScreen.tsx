@@ -127,6 +127,9 @@ export function CursaScreen({ id }: { id: string }) {
           </span>
         </button>
       ))}
+      <button class="primary" onClick={() => go(`/scaneaza/${id}`)}>
+        Scanează bilet (automat)
+      </button>
       <div class="row">
         <label class="btn grow">
           Fă poză biletului

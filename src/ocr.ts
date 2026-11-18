@@ -10,9 +10,8 @@ async function pregateste(foto: Blob): Promise<HTMLCanvasElement> {
   return canvas;
 }
 
-/** Citește textul din poză, local pe telefon (fără internet, fără costuri). */
-export async function recunoasteText(foto: Blob, progres?: (p: number) => void): Promise<string> {
-  const imagine = await pregateste(foto);
+/** Worker OCR gata de folosit (se poate refolosi pe mai multe cadre; se închide cu terminate()). */
+export async function creeazaWorker(progres?: (p: number) => void) {
   const { createWorker, PSM } = await import('tesseract.js');
   const baza = new URL(import.meta.env.BASE_URL + 'tesseract/', location.href).href;
   const worker = await createWorker('eng', 1, {
@@ -24,8 +23,25 @@ export async function recunoasteText(foto: Blob, progres?: (p: number) => void):
       if (m.status === 'recognizing text') progres?.(m.progress);
     },
   });
+  await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
+  return worker;
+}
+
+/** Cadrul curent din camera video, redus la cel mult `maxDim` pixeli pe latura lungă. */
+export function canvasDinVideo(video: HTMLVideoElement, maxDim: number): HTMLCanvasElement {
+  const scara = Math.min(1, maxDim / Math.max(video.videoWidth, video.videoHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(video.videoWidth * scara);
+  canvas.height = Math.round(video.videoHeight * scara);
+  canvas.getContext('2d')!.drawImage(video, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+/** Citește textul din poză, local pe telefon (fără internet, fără costuri). */
+export async function recunoasteText(foto: Blob, progres?: (p: number) => void): Promise<string> {
+  const imagine = await pregateste(foto);
+  const worker = await creeazaWorker(progres);
   try {
-    await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
     const { data } = await worker.recognize(imagine);
     return data.text;
   } finally {

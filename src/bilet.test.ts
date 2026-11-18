@@ -32,3 +32,30 @@ Total to pay: 4 200 HUF`);
     expect(parseBilet('blur blur')).toEqual({});
   });
 });
+
+describe('tichet real Budapest Airport (format AA.LL.ZZ)', () => {
+  it('rândul cu plata e ieșirea, cel dinainte e intrarea', () => {
+    const r = parseBilet(`Terminál Parking
+26.11.14 17:10 TE BE BAL
+<26111400100000099999>
+26.11.14 17:11 10 VISA
+FT.600 C 27% 128,00
+Budapest Airport Zrt.`);
+    expect(r).toEqual({ suma: 600, moneda: 'HUF', intrare: '2026-11-14T17:10', iesire: '2026-11-14T17:11', numar: '26111400100000099999' });
+  });
+
+  it('rândul de intrare necitit: rămâne ieșirea (ora plății) și suma', () => {
+    const r = parseBilet(`2/30302005/125020808/021562
+Hd Parking
+TM16ZB0
+26.11.14 17:11 10 VISA /
+FT.600 ~~ C 27% 128,00
+Budapest Hirort It ERG
+Adoszam: 12724163-4-43`);
+    expect(r).toEqual({ suma: 600, moneda: 'HUF', iesire: '2026-11-14T17:11' });
+  });
+
+  it('ora lipită de dată', () => {
+    expect(parseBilet('26.11.1417:10 TE BE BAL\n26.11.14 17:11 10 VISA').intrare).toBe('2026-11-14T17:10');
+  });
+});

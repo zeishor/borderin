@@ -29,20 +29,41 @@ function sume(text: string): { suma: number; moneda: MonedaBilet; prioritate: nu
   for (const linie of text.split(/\r?\n/)) {
     const prioritate = CUVINTE_TOTAL.test(linie) ? 1 : 0;
     const dupa = new RegExp(`(${NUMAR})\\s*(huf|ft|eur|€|ron|lei)(?![a-z])`, 'gi');
-    const inainte = new RegExp(`(huf|ft|eur|€|ron|lei)\\s*[:.]?\\s*(${NUMAR})`, 'gi');
+    const inainte = new RegExp(`(?<![a-z])(huf|ft|eur|€|ron|lei)\\s*[:.]?\\s*(${NUMAR})`, 'gi');
     for (const m of linie.matchAll(dupa)) rezultat.push({ suma: numar(m[1]), moneda: MONEDE[m[2].toLowerCase()], prioritate });
     for (const m of linie.matchAll(inainte)) rezultat.push({ suma: numar(m[2]), moneda: MONEDE[m[1].toLowerCase()], prioritate });
   }
   return rezultat.filter((x) => x.suma > 0);
 }
 
-function momente(text: string): string[] {
-  const gasite: string[] = [];
-  const an1 = /(\d{4})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})\.?\s+(\d{1,2})\s*[:.]\s*(\d{2})/g;
-  for (const m of text.matchAll(an1)) gasite.push(`${m[1]}-${pad(m[2])}-${pad(m[3])}T${pad(m[4])}:${m[5]}`);
-  const an2 = /(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})\s+(\d{1,2})\s*[:.]\s*(\d{2})/g;
-  for (const m of text.matchAll(an2)) gasite.push(`${m[3]}-${pad(m[2])}-${pad(m[1])}T${pad(m[4])}:${m[5]}`);
-  return [...new Set(gasite)].sort();
+const LINIE_PLATA = /visa|master|card|k[eé]szp|cash|paid|fizet|ft\.?\s*\d/i;
+
+interface Moment {
+  iso: string;
+  linie: string;
+}
+
+function momente(text: string): Moment[] {
+  const gasite: Moment[] = [];
+  const adauga = (iso: string, linie: string) => {
+    if (!gasite.some((g) => g.iso === iso)) gasite.push({ iso, linie });
+  };
+  for (const linie of text.split(/\r?\n/)) {
+    for (const m of linie.matchAll(/(\d{4})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})\.?\s+(\d{1,2})\s*[:.]\s*(\d{2})/g)) {
+      adauga(`${m[1]}-${pad(m[2])}-${pad(m[3])}T${pad(m[4])}:${m[5]}`, linie);
+    }
+    for (const m of linie.matchAll(/(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})\s+(\d{1,2})\s*[:.]\s*(\d{2})/g)) {
+      adauga(`${m[3]}-${pad(m[2])}-${pad(m[1])}T${pad(m[4])}:${m[5]}`, linie);
+    }
+    // Format maghiar AA.LL.ZZ HH:MM (ex. 26.11.14 17:11); ora poate fi lipită de dată.
+    for (const m of linie.matchAll(/(?<!\d)(\d{2})\.(\d{2})\.(\d{2})\s*(\d{1,2}):(\d{2})/g)) {
+      const [an, luna, zi] = [Number(m[1]), Number(m[2]), Number(m[3])];
+      if (an >= 20 && an <= 39 && luna >= 1 && luna <= 12 && zi >= 1 && zi <= 31) {
+        adauga(`20${m[1]}-${m[2]}-${m[3]}T${pad(m[4])}:${m[5]}`, linie);
+      }
+    }
+  }
+  return gasite.sort((x, y) => x.iso.localeCompare(y.iso));
 }
 
 /** Extrage suma, ora de intrare/ieșire și numărul biletului din textul citit de OCR. */
@@ -56,14 +77,21 @@ export function parseBilet(text: string): BiletExtras {
     rez.moneda = cea.moneda;
   }
 
-  const m = momente(text);
-  if (m.length) rez.intrare = m[0];
-  if (m.length > 1) rez.iesire = m[m.length - 1];
+  const ms = momente(text);
+  const platit = ms.find((x) => LINIE_PLATA.test(x.linie));
+  if (platit) {
+    // Rândul cu plata (ex. „26.11.14 17:11 10 VISA") e momentul ieșirii.
+    rez.iesire = platit.iso;
+    const inainte = ms.find((x) => x !== platit && x.iso <= platit.iso);
+    if (inainte) rez.intrare = inainte.iso;
+  } else if (ms.length) {
+    rez.intrare = ms[0].iso;
+    if (ms.length > 1) rez.iesire = ms[ms.length - 1].iso;
+  }
 
-  const fara = text.replace(/\d{4}\s*[.\-/]\s*\d{1,2}\s*[.\-/]\s*\d{1,2}\.?\s+\d{1,2}\s*[:.]\s*\d{2}/g, ' ');
-  const etichetat = fara.match(/(?:ticket|jegy|nr|no|id|#)\D{0,6}(\d{5,})/i);
-  const liber = fara.match(/\b(\d{8,})\b/);
-  const n = etichetat?.[1] ?? liber?.[1];
+  const etichetat = text.match(/\b(?:ticket|jegy|nr|no|id)\b\.?:?\s*#?(\d{5,})/i);
+  const codat = text.match(/<\s*(\d{12,})\s*>/);
+  const n = etichetat?.[1] ?? codat?.[1];
   if (n) rez.numar = n;
 
   return rez;

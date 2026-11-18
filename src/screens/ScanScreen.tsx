@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { back, go } from '../router';
 import { newId, saveBilet } from '../store';
 import { parseBilet } from '../bilet';
-import { canvasDinVideo, creeazaWorker } from '../ocr';
+import { canvasDinVideo, cautaIntrarea, creeazaWorker, recunoaste } from '../ocr';
 
 const PAUZA_MS = 200;
 
@@ -34,14 +34,23 @@ export function ScanScreen({ cursaId }: { cursaId: string }) {
 
         while (!oprit) {
           setStatus('Ține biletul în cadru, drept și nemișcat');
-          const { data } = await worker.recognize(canvasDinVideo(video.current, 1600));
+          const canvas = canvasDinVideo(video.current, 1600);
+          const data = await recunoaste(worker, canvas);
           if (oprit) return;
           setCadre((n) => n + 1);
 
-          const x = parseBilet(data.text);
+          let text = data.text;
+          let x = parseBilet(text);
           if (x.suma && x.iesire) {
             oprit = true;
-            setStatus('Am găsit biletul');
+            setStatus('Am găsit biletul, citesc ora de intrare…');
+            if (!x.intrare) {
+              const extra = await cautaIntrarea(worker, canvas, data);
+              if (extra) {
+                text = `${text}\n${extra}`;
+                x = parseBilet(text);
+              }
+            }
             const foto = await new Promise<Blob | null>((r) =>
               canvasDinVideo(video.current!, 2400).toBlob(r, 'image/jpeg', 0.9),
             );
@@ -58,7 +67,7 @@ export function ScanScreen({ cursaId }: { cursaId: string }) {
               iesire: x.iesire,
               numar: x.numar,
               foto: foto ?? undefined,
-              textOcr: data.text,
+              textOcr: text,
             });
             go(`/bilet/${id}`);
             return;

@@ -59,3 +59,12 @@ Adoszam: 12724163-4-43`);
     expect(parseBilet('26.11.1417:10 TE BE BAL\n26.11.14 17:11 10 VISA').intrare).toBe('2026-11-14T17:10');
   });
 });
+
+describe('intrarea citită dintr-o bandă', () => {
+  it('virgulă în loc de punct și ora lipită de dată', () => {
+    const r = parseBilet(`26.11.14 17:11 10 VISA
+FT.600 C 27% 128,00
+26,11,1417:10 TEBE BAL`);
+    expect(r).toMatchObject({ suma: 600, moneda: 'HUF', intrare: '2026-11-14T17:10', iesire: '2026-11-14T17:11' });
+  });
+});

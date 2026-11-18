@@ -56,7 +56,7 @@ function momente(text: string): Moment[] {
       adauga(`${m[3]}-${pad(m[2])}-${pad(m[1])}T${pad(m[4])}:${m[5]}`, linie);
     }
     // Format maghiar AA.LL.ZZ HH:MM (ex. 26.11.14 17:11); ora poate fi lipită de dată.
-    for (const m of linie.matchAll(/(?<!\d)(\d{2})\.(\d{2})\.(\d{2})\s*(\d{1,2}):(\d{2})/g)) {
+    for (const m of linie.matchAll(/(?<!\d)(\d{2})[.,](\d{2})[.,](\d{2})\s*(\d{1,2}):(\d{2})/g)) {
       const [an, luna, zi] = [Number(m[1]), Number(m[2]), Number(m[3])];
       if (an >= 20 && an <= 39 && luna >= 1 && luna <= 12 && zi >= 1 && zi <= 31) {
         adauga(`20${m[1]}-${m[2]}-${m[3]}T${pad(m[4])}:${m[5]}`, linie);

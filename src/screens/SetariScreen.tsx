@@ -1,12 +1,14 @@
 import { useState } from 'preact/hooks';
 import { deleteMasina, newId, saveMasina, saveSetari, useStore } from '../store';
 import { Field, Screen } from '../ui';
+import { NAVIGATII, navigatieAleasa, salveazaNavigatie, type Navigatie } from '../nav';
 import { salveazaTracker, TRACKERE, trackerAles, type Tracker } from '../zbor';
 
 export function SetariScreen() {
   const { masini, setari } = useStore();
   const [nume, setNume] = useState('');
   const [locuri, setLocuri] = useState(4);
+  const [nav, setNav] = useState<Navigatie>(navigatieAleasa());
   const [tracker, setTracker] = useState<Tracker>(trackerAles());
 
   async function adauga() {
@@ -34,6 +36,24 @@ export function SetariScreen() {
         <input class="narrow" type="number" min={1} value={locuri} onInput={(e) => setLocuri(Number(e.currentTarget.value) || 1)} />
         <button onClick={adauga}>Adaugă</button>
       </div>
+
+      <h2 class="day">Navigație</h2>
+      <Field label="Navighează cu">
+        <select
+          value={nav}
+          onChange={(e) => {
+            const n = e.currentTarget.value as Navigatie;
+            setNav(n);
+            salveazaNavigatie(n);
+          }}
+        >
+          {NAVIGATII.map((n) => (
+            <option key={n.id} value={n.id}>
+              {n.nume}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       <h2 class="day">Urmărire zbor</h2>
       <Field label="Urmărește zborul cu">

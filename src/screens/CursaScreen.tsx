@@ -7,6 +7,7 @@ import { parseMesaje } from '../parser';
 import { aplicaPeCursa, rezervareDinExtras } from '../importa';
 import { Field, Screen } from '../ui';
 import { linkZbor } from '../zbor';
+import { NavButoane } from '../navbuton';
 import type { Rezervare } from '../types';
 
 function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
@@ -44,6 +45,7 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
             </a>
           </div>
         )}
+        <NavButoane preluare={r.preluare} lasare={r.lasare} />
         <Incasare r={r} />
         </div>
       ))}

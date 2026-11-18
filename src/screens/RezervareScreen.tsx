@@ -4,6 +4,7 @@ import { waLink } from '../phone';
 import { Incasare } from '../incasare';
 import { Field, Screen } from '../ui';
 import { linkZbor } from '../zbor';
+import { NavButoane } from '../navbuton';
 import type { Directie, Moneda, Plata, Rezervare, StarePlata, Telefon } from '../types';
 
 export function RezervareScreen({ id }: { id: string }) {
@@ -85,6 +86,7 @@ export function RezervareScreen({ id }: { id: string }) {
       <Field label="Lăsare">
         <input {...text('lasare')} />
       </Field>
+      <NavButoane preluare={r.preluare} lasare={r.lasare} />
       <Field label="Observații">
         <textarea rows={3} {...text('observatii')} />
       </Field>

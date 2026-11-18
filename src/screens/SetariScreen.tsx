@@ -1,11 +1,13 @@
 import { useState } from 'preact/hooks';
 import { deleteMasina, newId, saveMasina, saveSetari, useStore } from '../store';
 import { Field, Screen } from '../ui';
+import { salveazaTracker, TRACKERE, trackerAles, type Tracker } from '../zbor';
 
 export function SetariScreen() {
   const { masini, setari } = useStore();
   const [nume, setNume] = useState('');
   const [locuri, setLocuri] = useState(4);
+  const [tracker, setTracker] = useState<Tracker>(trackerAles());
 
   async function adauga() {
     if (!nume.trim()) return;
@@ -32,6 +34,25 @@ export function SetariScreen() {
         <input class="narrow" type="number" min={1} value={locuri} onInput={(e) => setLocuri(Number(e.currentTarget.value) || 1)} />
         <button onClick={adauga}>Adaugă</button>
       </div>
+
+      <h2 class="day">Urmărire zbor</h2>
+      <Field label="Urmărește zborul cu">
+        <select
+          value={tracker}
+          onChange={(e) => {
+            const t = e.currentTarget.value as Tracker;
+            setTracker(t);
+            salveazaTracker(t);
+          }}
+        >
+          {TRACKERE.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.nume}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <p class="muted">Se deschide ca link; dacă aplicația e instalată, telefonul o poate deschide direct pe ea.</p>
 
       <h2 class="day">Cursă „extra”</h2>
       <Field label="Prag (ore, durata totală a cursei)">

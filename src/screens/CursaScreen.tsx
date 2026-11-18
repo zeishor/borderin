@@ -6,6 +6,7 @@ import { Incasare } from '../incasare';
 import { parseMesaje } from '../parser';
 import { aplicaPeCursa, rezervareDinExtras } from '../importa';
 import { Field, Screen } from '../ui';
+import { linkZbor } from '../zbor';
 import type { Rezervare } from '../types';
 
 function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
@@ -36,6 +37,13 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
           )}
           <span>{r.plata.stare === 'achitat' ? 'Achitat' : `De încasat: ${textDeIncasat([r])}`}</span>
         </button>
+        {r.zbor && linkZbor(r.zbor) && (
+          <div class="actiuni">
+            <a class="wa" href={linkZbor(r.zbor)} target="_blank" rel="noopener">
+              ✈ Urmărește {r.zbor}
+            </a>
+          </div>
+        )}
         <Incasare r={r} />
         </div>
       ))}

@@ -3,6 +3,7 @@ import { deleteRezervare, saveRezervare, useStore } from '../store';
 import { waLink } from '../phone';
 import { Incasare } from '../incasare';
 import { Field, Screen } from '../ui';
+import { linkZbor } from '../zbor';
 import type { Directie, Moneda, Plata, Rezervare, StarePlata, Telefon } from '../types';
 
 export function RezervareScreen({ id }: { id: string }) {
@@ -52,6 +53,14 @@ export function RezervareScreen({ id }: { id: string }) {
           <input {...text('orasZbor')} />
         </Field>
       </div>
+
+      {r.zbor && linkZbor(r.zbor) && (
+        <p>
+          <a class="wa" href={linkZbor(r.zbor)} target="_blank" rel="noopener">
+            ✈ Urmărește zborul {r.zbor}
+          </a>
+        </p>
+      )}
 
       <h2 class="day">Telefoane</h2>
       {r.telefoane.map((t, i) => (

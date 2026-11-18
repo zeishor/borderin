@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { getAll, put, remove } from './db';
-import type { Bilet, Cursa, Masina, Rezervare, Setari } from './types';
+import type { Bilet, Cursa, Decont, Masina, Rezervare, Setari } from './types';
 
 interface State {
   curse: Cursa[];
@@ -8,12 +8,13 @@ interface State {
   masini: Masina[];
   setari: Setari;
   bilete: Bilet[];
+  deconturi: Decont[];
 }
 
 const SETARI_ID = 'setari';
 const SETARI_IMPLICITE: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5 };
 
-let state: State = { curse: [], rezervari: [], masini: [], setari: SETARI_IMPLICITE, bilete: [] };
+let state: State = { curse: [], rezervari: [], masini: [], setari: SETARI_IMPLICITE, bilete: [], deconturi: [] };
 const listeners = new Set<() => void>();
 
 function update(next: Partial<State>) {
@@ -26,12 +27,13 @@ export function newId(): string {
 }
 
 export async function initStore(): Promise<void> {
-  const [curse, rezervari, masini, setari, bilete] = await Promise.all([
+  const [curse, rezervari, masini, setari, bilete, deconturi] = await Promise.all([
     getAll<Cursa>('curse'),
     getAll<Rezervare>('rezervari'),
     getAll<Masina>('masini'),
     getAll<Setari & { id: string }>('setari'),
     getAll<Bilet>('bilete'),
+    getAll<Decont>('deconturi'),
   ]);
   const salvate = setari.find((s) => s.id === SETARI_ID);
   update({
@@ -39,6 +41,7 @@ export async function initStore(): Promise<void> {
     rezervari,
     masini,
     bilete,
+    deconturi,
     setari: salvate
       ? { pragExtraOre: salvate.pragExtraOre, drumInapoiOre: salvate.drumInapoiOre }
       : SETARI_IMPLICITE,
@@ -116,4 +119,14 @@ export async function saveBilet(b: Bilet): Promise<void> {
 export async function deleteBilet(id: string): Promise<void> {
   await remove('bilete', id);
   update({ bilete: state.bilete.filter((b) => b.id !== id) });
+}
+
+export async function saveDecont(d: Decont): Promise<void> {
+  await put('deconturi', d);
+  update({ deconturi: upsert(state.deconturi, d) });
+}
+
+export async function deleteDecont(id: string): Promise<void> {
+  await remove('deconturi', id);
+  update({ deconturi: state.deconturi.filter((d) => d.id !== id) });
 }

@@ -6,6 +6,7 @@ import { CursaScreen } from './screens/CursaScreen';
 import { RezervareScreen } from './screens/RezervareScreen';
 import { SetariScreen } from './screens/SetariScreen';
 import { BiletScreen } from './screens/BiletScreen';
+import { DecontScreen } from './screens/DecontScreen';
 import { ScanScreen } from './screens/ScanScreen';
 
 export function App() {
@@ -13,6 +14,7 @@ export function App() {
   const route = useRoute();
 
   if (route === '/cursa-noua') return <CursaNoua />;
+  if (route === '/decont') return <DecontScreen />;
   if (route === '/setari') return <SetariScreen />;
   const cursa = route.match(/^\/cursa\/(.+)$/);
   if (cursa) return <CursaScreen id={cursa[1]} />;

@@ -90,3 +90,16 @@ export interface Bilet {
   /** Textul citit de OCR, păstrat pentru verificare. */
   textOcr?: string;
 }
+
+/** Un decont: momentul în care șoferul a predat bani și/sau a decontat bilete la firmă. */
+export interface Decont {
+  id: string;
+  creat: number;
+  /** YYYY-MM-DD */
+  data: string;
+  /** Banii predați la firmă, pe monede. */
+  predat: Record<Moneda, number>;
+  /** Biletele decontate cu această ocazie. */
+  bilete: string[];
+  note?: string;
+}

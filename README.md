@@ -88,3 +88,7 @@ Rulare: `npm install`, apoi `npm run dev`; teste: `npm test`; publicare pe GitHu
 ## Date private
 
 Mesajele reale conțin nume și telefoane. Exemplele pentru teste se pun în `samples/private/` (ignorat de git), cu datele personale schimbate.
+
+## Decont
+
+Ecranul „Decont" (💼 din lista de curse): șoferul alege când merge la firmă. Un decont înregistrează banii predați (EUR/RON, parțial sau tot) și biletele decontate (toate odată sau alese). Soldul „de predat" = încasat − predat, pe monede; biletele decontate dispar din „nedecontate". Un decont se poate anula, iar soldurile revin. Conversia dintre monede (bilete în HUF, bani în EUR/RON) nu se face în aplicație.

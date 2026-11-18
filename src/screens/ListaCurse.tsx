@@ -18,9 +18,14 @@ export function ListaCurse() {
     <Screen
       title="Curse"
       action={
-        <button class="icon" aria-label="Setări" onClick={() => go('/setari')}>
-          ⚙
-        </button>
+        <>
+          <button class="icon" aria-label="Decont" onClick={() => go('/decont')}>
+            💼
+          </button>
+          <button class="icon" aria-label="Setări" onClick={() => go('/setari')}>
+            ⚙
+          </button>
+        </>
       }
     >
       {grupuri.length === 0 && (

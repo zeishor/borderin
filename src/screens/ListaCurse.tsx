@@ -2,6 +2,7 @@ import { go } from '../router';
 import { useStore } from '../store';
 import { arePlataIncasata, fmtData, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Screen } from '../ui';
+import { traseu } from '../traseu';
 
 export function ListaCurse() {
   const { curse, rezervari, masini } = useStore();
@@ -28,6 +29,14 @@ export function ListaCurse() {
             return (
               <button key={c.id} class="card trip" onClick={() => go(`/cursa/${c.id}`)}>
                 <strong class="trip-titlu">{titluCursa(c)}</strong>
+                <span class="traseu">
+                  {traseu(c, ale).map((oras, i, t) => (
+                    <span key={i} class={i === 0 ? 'stop prima' : i === t.length - 1 ? 'stop ultima' : 'stop'}>
+                      <span class="stop-dot" />
+                      <span class="stop-nume">{oras}</span>
+                    </span>
+                  ))}
+                </span>
                 <span class="chips">
                   <span class="chip">👥 {totalPasageri(ale)} pax</span>
                   <span class="chip">📋 {ale.length} rezervări</span>

@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { deleteMasina, newId, saveMasina, saveSetari, useStore } from '../store';
 import { Field, Screen } from '../ui';
+import { salveazaTema, TEME, temaAleasa, type Tema } from '../tema';
 import { NAVIGATII, navigatieAleasa, salveazaNavigatie, type Navigatie } from '../nav';
 import { salveazaTracker, TRACKERE, trackerAles, type Tracker } from '../zbor';
 
@@ -8,6 +9,7 @@ export function SetariScreen() {
   const { masini, setari } = useStore();
   const [nume, setNume] = useState('');
   const [locuri, setLocuri] = useState(4);
+  const [tema, setTema] = useState<Tema>(temaAleasa());
   const [nav, setNav] = useState<Navigatie>(navigatieAleasa());
   const [tracker, setTracker] = useState<Tracker>(trackerAles());
 
@@ -36,6 +38,24 @@ export function SetariScreen() {
         <input class="narrow" type="number" min={1} value={locuri} onInput={(e) => setLocuri(Number(e.currentTarget.value) || 1)} />
         <button onClick={adauga}>Adaugă</button>
       </div>
+
+      <h2 class="day">Aspect</h2>
+      <Field label="Temă">
+        <select
+          value={tema}
+          onChange={(e) => {
+            const t = e.currentTarget.value as Tema;
+            setTema(t);
+            salveazaTema(t);
+          }}
+        >
+          {TEME.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.nume}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       <h2 class="day">Navigație</h2>
       <Field label="Navighează cu">

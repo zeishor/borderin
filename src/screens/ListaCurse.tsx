@@ -15,7 +15,7 @@ export function ListaCurse() {
   }
 
   return (
-    <Screen title="Borderin" tabs>
+    <Screen title="Borderin" tabs banner>
       {grupuri.length === 0 && (
         <p class="empty">Nicio cursă încă. Apasă „Cursă nouă” și lipește mesajele de la dispecer.</p>
       )}

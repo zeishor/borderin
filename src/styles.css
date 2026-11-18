@@ -198,3 +198,11 @@ pre { white-space: pre-wrap; word-break: break-word; font-size: .85rem; backgrou
 .bar-action { display: flex; }
 .bar .logo { width: 36px; height: 36px; border-radius: 10px; margin-left: 4px; box-shadow: 0 0 0 1.5px rgb(255 255 255 / .25); }
 .bar .logo + h1 { margin-left: 10px; }
+.bar.banner {
+  min-height: calc(env(safe-area-inset-top) + min(100vw, 640px) / 3.2);
+  padding: 0;
+  background: #0b4a8c url('/borderin/banner.jpg') center / cover no-repeat;
+  border-radius: 0 0 22px 22px;
+}
+.bar.banner .bar-action { position: absolute; right: 8px; bottom: 6px; }
+h1.ascuns { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

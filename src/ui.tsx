@@ -27,20 +27,22 @@ export function Screen(props: {
   action?: ComponentChildren;
   /** Bara de jos cu cele trei secțiuni principale. */
   tabs?: boolean;
+  /** Antet cu imaginea Borderin (logo + nume) în loc de titlu. */
+  banner?: boolean;
   children: ComponentChildren;
 }) {
   return (
     <div class={props.tabs ? 'screen cu-taburi' : 'screen'}>
-      <header class="bar">
+      <header class={props.banner ? 'bar banner' : 'bar'}>
         {props.backTo !== undefined && (
           <button class="icon" aria-label="Înapoi" onClick={() => back(props.backTo)}>
             ←
           </button>
         )}
-        {props.backTo === undefined && (
+        {props.backTo === undefined && !props.banner && (
           <img class="logo" src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" width={36} height={36} />
         )}
-        <h1>{props.title}</h1>
+        <h1 class={props.banner ? 'ascuns' : undefined}>{props.title}</h1>
         <div class="bar-action">{props.action}</div>
       </header>
       <main>{props.children}</main>

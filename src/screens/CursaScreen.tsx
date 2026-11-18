@@ -14,39 +14,45 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
   const sortate = [...props.lista].sort((a, b) => (a.ora ?? '').localeCompare(b.ora ?? ''));
   return (
     <section>
-      <h2 class="day">
+      <h2 class="day sectiune">
         {props.titlu} ({totalPasageri(sortate)} pax)
       </h2>
       {sortate.length === 0 && <p class="muted">Nimic aici.</p>}
       {sortate.map((r) => (
-        <div key={r.id} class="card-wrap">
-        <button class="card" onClick={() => go(`/rezervare/${r.id}`)}>
-          <strong>
-            {r.ora ? `${r.ora} · ` : ''}
-            {r.nume || '(fără nume)'}
-          </strong>
-          <span class="muted">
-            {r.pasageri} pax
-            {r.zbor ? ` · ✈ ${r.zbor}` : ''}
-            {r.orasZbor ? ` · ${r.orasZbor}` : ''}
-            {r.eticheta ? ` · ${r.eticheta}` : ''}
-          </span>
-          {(r.preluare || r.lasare) && (
-            <span class="adrese">
-              {r.preluare || '?'} → {r.lasare || '?'}
+        <div key={r.id} class="rez">
+          <button class="rez-top" onClick={() => go(`/rezervare/${r.id}`)}>
+            <span class="rez-head">
+              {r.ora && <span class="ora">{r.ora}</span>}
+              <strong class="rez-nume">{r.nume || '(fără nume)'}</strong>
+              <span class="chip">👥 {r.pasageri}</span>
             </span>
+            {(r.zbor || r.orasZbor || r.eticheta) && (
+              <span class="chips">
+                {r.zbor && <span class="chip zbor">✈ {r.zbor}</span>}
+                {r.orasZbor && <span class="chip">{r.orasZbor}</span>}
+                {r.eticheta && <span class="chip">{r.eticheta}</span>}
+              </span>
+            )}
+            {(r.preluare || r.lasare) && (
+              <span class="ruta">
+                <span class="ruta-linie" />
+                <span class="ruta-text">{r.preluare || '?'}</span>
+                <span class="ruta-text">{r.lasare || '?'}</span>
+              </span>
+            )}
+            <span class={r.plata.stare === 'achitat' ? 'pill achitat' : 'pill de-incasat'}>
+              {r.plata.stare === 'achitat' ? 'Achitat' : `De încasat ${textDeIncasat([r])}`}
+            </span>
+          </button>
+          {r.zbor && linkZbor(r.zbor) && (
+            <div class="actiuni">
+              <a class="wa" href={linkZbor(r.zbor)} target="_blank" rel="noopener">
+                ✈ Urmărește {r.zbor}
+              </a>
+            </div>
           )}
-          <span>{r.plata.stare === 'achitat' ? 'Achitat' : `De încasat: ${textDeIncasat([r])}`}</span>
-        </button>
-        {r.zbor && linkZbor(r.zbor) && (
-          <div class="actiuni">
-            <a class="wa" href={linkZbor(r.zbor)} target="_blank" rel="noopener">
-              ✈ Urmărește {r.zbor}
-            </a>
-          </div>
-        )}
-        <NavButoane preluare={r.preluare} lasare={r.lasare} />
-        <Incasare r={r} />
+          <NavButoane preluare={r.preluare} lasare={r.lasare} />
+          <Incasare r={r} />
         </div>
       ))}
     </section>

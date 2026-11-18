@@ -18,7 +18,7 @@ export function SetariScreen() {
   }
 
   return (
-    <Screen title="Setări" backTo="/">
+    <Screen title="Setări" tabs>
       <h2 class="day">Mașini</h2>
       {masini.length === 0 && <p class="muted">Nicio mașină adăugată.</p>}
       {masini.map((m) => (

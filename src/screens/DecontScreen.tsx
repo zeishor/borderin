@@ -61,7 +61,7 @@ export function DecontScreen() {
   const istoric = [...deconturi].sort((a, b) => b.creat - a.creat);
 
   return (
-    <Screen title="Decont" backTo="/">
+    <Screen title="Decont" tabs>
       <div class="total">
         <span>Încasat în total</span>
         <strong>{textBani(incasat(rezervari))}</strong>

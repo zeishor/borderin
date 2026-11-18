@@ -15,19 +15,7 @@ export function ListaCurse() {
   }
 
   return (
-    <Screen
-      title="Curse"
-      action={
-        <>
-          <button class="icon" aria-label="Decont" onClick={() => go('/decont')}>
-            💼
-          </button>
-          <button class="icon" aria-label="Setări" onClick={() => go('/setari')}>
-            ⚙
-          </button>
-        </>
-      }
-    >
+    <Screen title="Borderin" tabs>
       {grupuri.length === 0 && (
         <p class="empty">Nicio cursă încă. Apasă „Cursă nouă” și lipește mesajele de la dispecer.</p>
       )}
@@ -38,15 +26,17 @@ export function ListaCurse() {
             const ale = rezervari.filter((r) => r.cursaId === c.id);
             const masina = masini.find((m) => m.id === c.masinaId);
             return (
-              <button key={c.id} class="card" onClick={() => go(`/cursa/${c.id}`)}>
-                <strong>{titluCursa(c)}</strong>
-                <span class="muted">
-                  {ale.length} rezervări · {totalPasageri(ale)} pax · {masina ? masina.nume : 'fără mașină'}
-                  {c.plecare ? ` · plecare ${c.plecare}` : ''}
+              <button key={c.id} class="card trip" onClick={() => go(`/cursa/${c.id}`)}>
+                <strong class="trip-titlu">{titluCursa(c)}</strong>
+                <span class="chips">
+                  <span class="chip">👥 {totalPasageri(ale)} pax</span>
+                  <span class="chip">📋 {ale.length} rezervări</span>
+                  <span class="chip">🚐 {masina ? masina.nume : 'fără mașină'}</span>
+                  {c.plecare && <span class="chip">🕒 {c.plecare}</span>}
                 </span>
-                <span>
-                  De încasat: {textDeIncasat(ale)}
-                  {arePlataIncasata(ale) ? ` · Încasat: ${textIncasat(ale)}` : ''}
+                <span class="chips">
+                  <span class="pill de-incasat">De încasat {textDeIncasat(ale)}</span>
+                  {arePlataIncasata(ale) && <span class="pill incasat">Încasat {textIncasat(ale)}</span>}
                 </span>
               </button>
             );

@@ -1,13 +1,12 @@
 import { incasat } from './format';
+import { MONEDE, zero } from './monede';
 import type { Bilet, Decont, Moneda, MonedaBilet, Rezervare } from './types';
 
 export type Totaluri = Record<Moneda, number>;
 
-const MONEDE: Moneda[] = ['RON', 'EUR'];
-
 /** Banii predați la firmă până acum, pe monede. */
 export function totalPredat(deconturi: Decont[]): Totaluri {
-  const t: Totaluri = { RON: 0, EUR: 0 };
+  const t: Totaluri = zero();
   for (const d of deconturi) for (const m of MONEDE) t[m] += d.predat[m] || 0;
   return t;
 }
@@ -16,7 +15,9 @@ export function totalPredat(deconturi: Decont[]): Totaluri {
 export function restDePredat(rezervari: Rezervare[], deconturi: Decont[]): Totaluri {
   const i = incasat(rezervari);
   const p = totalPredat(deconturi);
-  return { RON: i.RON - p.RON, EUR: i.EUR - p.EUR };
+  const r = zero();
+  for (const m of MONEDE) r[m] = i[m] - p[m];
+  return r;
 }
 
 export function idBileteDecontate(deconturi: Decont[]): Set<string> {

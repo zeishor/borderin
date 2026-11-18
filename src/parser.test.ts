@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseMesaje, parseRuta, parseZbor } from './parser';
+import { parseMesaje, parsePlata, parseRuta, parseZbor, sumeDinText } from './parser';
 
 // Date inventate; doar structura imită mesajele reale.
 const t = (...c: string[]) => c.join('\t');
@@ -348,5 +348,19 @@ describe('codul zborului', () => {
   it('nu confundă blocul, strada sau numărul de pasageri cu un zbor', () => {
     const r = parseMesaje(t('Ana', 'Prob', '0700000082', '2026-11-16', 'Timisoara-Budapesta', 'Str. Florilor nr 5, BL 14, SC 123', '3 pax', '11:00', 'Aeroport Budapesta', 'Achitat'), AZI).rezervari[0];
     expect(r.zbor).toBeUndefined();
+  });
+});
+
+describe('monede suplimentare', () => {
+  it('recunoaște lire și franci elvețieni', () => {
+    expect(parsePlata('35 lire')).toMatchObject({ suma: 35, moneda: 'GBP' });
+    expect(parsePlata('40 GBP')).toMatchObject({ suma: 40, moneda: 'GBP' });
+    expect(parsePlata('45 franci elvetieni')).toMatchObject({ suma: 45, moneda: 'CHF' });
+    expect(parsePlata('50 chf')).toMatchObject({ suma: 50, moneda: 'CHF' });
+    expect(sumeDinText('40 euro / 35 lire / 220 lei')).toEqual([
+      { suma: 40, moneda: 'EUR' },
+      { suma: 35, moneda: 'GBP' },
+      { suma: 220, moneda: 'RON' },
+    ]);
   });
 });

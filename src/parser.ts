@@ -1,3 +1,4 @@
+import { CUVINTE_MONEDA, monedaDinCuvant } from './monede';
 import { waDigits } from './phone';
 import type { Directie, Moneda, Plata, Telefon } from './types';
 
@@ -41,7 +42,7 @@ interface Mesaj {
 
 const SENDER = String.raw`\s*[^:\t]*:\s*`;
 const TELEFON_LA_INCEPUT = /^(?:\+|00)?\d[\d\s().-]*\d/;
-const BANI = /(\d+(?:[.,]\d+)?)\s*(?:de\s+)?(euro|eur|lei|ron|€)/gi;
+const BANI = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:de\\s+)?(${CUVINTE_MONEDA})`, 'gi');
 const CUVINTE_PLATA = /achit|cash|plat[aă]\s+la|la\s+[sș]ofer|\bop\b|ordin\s+de\s+plat|fact\./i;
 
 const norm = (s: string) =>
@@ -121,14 +122,14 @@ function adaugaTelefon(lista: Telefon[], t: Telefon) {
 export function sumeDinText(text: string): { suma: number; moneda: Moneda }[] {
   return [...text.matchAll(BANI)].map((m) => ({
     suma: Number(m[1].replace(',', '.')),
-    moneda: /^(lei|ron)$/i.test(m[2]) ? 'RON' : 'EUR',
+    moneda: monedaDinCuvant(m[2]),
   }));
 }
 
 export function parsePlata(celula: string): Plata {
   const sume = [...celula.matchAll(BANI)];
   const prima = sume[0];
-  const moneda: Moneda = prima && /^(lei|ron)$/i.test(prima[2]) ? 'RON' : 'EUR';
+  const moneda: Moneda = prima ? monedaDinCuvant(prima[2]) : 'EUR';
   const achitat =
     /achitat|achit[aă]\s+(cu\s+op|[iî]n\s+banc|prin)|\bop\b|ordin\s+de\s+plat|fact\./i.test(celula);
 
@@ -149,7 +150,7 @@ export function parsePlata(celula: string): Plata {
 
 function esteCelulaPlata(c: string): boolean {
   BANI.lastIndex = 0;
-  return /(\d+(?:[.,]\d+)?)\s*(?:de\s+)?(euro|eur|lei|ron|€)/i.test(c) || CUVINTE_PLATA.test(c);
+  return new RegExp(BANI.source, 'i').test(c) || CUVINTE_PLATA.test(c);
 }
 
 /** Un rând cu multe coloane (rezervare întreagă pe un singur rând). */

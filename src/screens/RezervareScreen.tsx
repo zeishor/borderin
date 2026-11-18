@@ -117,6 +117,8 @@ export function RezervareScreen({ id }: { id: string }) {
           <select value={r.plata.moneda} onChange={(e) => setPlata({ moneda: e.currentTarget.value as Moneda })}>
             <option value="EUR">EUR</option>
             <option value="RON">RON</option>
+            <option value="GBP">GBP (lire)</option>
+            <option value="CHF">CHF (franci)</option>
           </select>
         </Field>
       </div>

@@ -1,3 +1,4 @@
+import { MONEDE, SIMBOL, zero } from './monede';
 import { sumeDinText } from './parser';
 import type { Bilet, Cursa, Moneda, MonedaBilet, Plata, Rezervare } from './types';
 
@@ -17,7 +18,7 @@ export function fmtData(iso: string): string {
 }
 
 export function fmtSuma(suma: number, moneda: Moneda): string {
-  return `${suma.toLocaleString('ro-RO')} ${moneda === 'EUR' ? '€' : 'lei'}`;
+  return `${suma.toLocaleString('ro-RO')} ${SIMBOL[moneda]}`;
 }
 
 export interface Suma {
@@ -40,7 +41,7 @@ export function optiuniPlata(p: Plata): Suma[] {
 
 /** Sumele rămase de încasat (rezervări neachitate și neîncasate), separat pe monede. */
 export function deIncasat(rezervari: Rezervare[]): Totaluri {
-  const total: Totaluri = { RON: 0, EUR: 0 };
+  const total: Totaluri = zero();
   for (const r of rezervari) {
     if (r.plata.stare === 'de_incasat' && !r.plata.incasat && r.plata.suma) total[r.plata.moneda] += r.plata.suma;
   }
@@ -49,7 +50,7 @@ export function deIncasat(rezervari: Rezervare[]): Totaluri {
 
 /** Sumele încasate efectiv de șofer, separat pe monede. */
 export function incasat(rezervari: Rezervare[]): Totaluri {
-  const total: Totaluri = { RON: 0, EUR: 0 };
+  const total: Totaluri = zero();
   for (const r of rezervari) {
     if (r.plata.incasat) total[r.plata.incasat.moneda] += r.plata.incasat.suma;
   }
@@ -57,13 +58,13 @@ export function incasat(rezervari: Rezervare[]): Totaluri {
 }
 
 export function textBani(t: Totaluri): string {
-  const parti = (['RON', 'EUR'] as Moneda[]).filter((m) => t[m] > 0).map((m) => fmtSuma(t[m], m));
+  const parti = MONEDE.filter((m) => t[m] > 0).map((m) => fmtSuma(t[m], m));
   return parti.length ? parti.join(' + ') : '—';
 }
 
 export const textDeIncasat = (rezervari: Rezervare[]) => textBani(deIncasat(rezervari));
 export const textIncasat = (rezervari: Rezervare[]) => textBani(incasat(rezervari));
-export const arePlataIncasata = (rezervari: Rezervare[]) => (['RON', 'EUR'] as Moneda[]).some((m) => incasat(rezervari)[m] > 0);
+export const arePlataIncasata = (rezervari: Rezervare[]) => MONEDE.some((m) => incasat(rezervari)[m] > 0);
 
 export function titluCursa(c: Cursa): string {
   return `Timișoara – ${c.destinatie || 'destinație?'}`;

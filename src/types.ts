@@ -1,4 +1,4 @@
-export type Moneda = 'RON' | 'EUR';
+export type Moneda = 'RON' | 'EUR' | 'GBP' | 'CHF';
 export type Directie = 'dus' | 'retur';
 export type StarePlata = 'de_incasat' | 'achitat';
 

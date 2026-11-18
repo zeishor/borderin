@@ -26,8 +26,8 @@ describe('plăți', () => {
       rez({ stare: 'de_incasat', suma: 40, moneda: 'EUR', incasat: { suma: 40, moneda: 'EUR' } }),
       rez({ stare: 'achitat', suma: 40, moneda: 'EUR' }),
     ];
-    expect(deIncasat(lista)).toEqual({ RON: 0, EUR: 40 });
-    expect(incasat(lista)).toEqual({ RON: 220, EUR: 40 });
+    expect(deIncasat(lista)).toEqual({ RON: 0, EUR: 40, GBP: 0, CHF: 0 });
+    expect(incasat(lista)).toEqual({ RON: 220, EUR: 40, GBP: 0, CHF: 0 });
     expect(textBani(incasat(lista))).toContain('+');
   });
 });

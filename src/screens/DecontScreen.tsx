@@ -3,7 +3,8 @@ import { bileteNedecontate, restDePredat, totalBilete, totalPredat } from '../de
 import { azi, fmtData, fmtMoment, fmtSuma, fmtSumaBilet, incasat, textBani, titluCursa } from '../format';
 import { deleteDecont, newId, saveDecont, useStore } from '../store';
 import { Field, Screen } from '../ui';
-import type { Bilet, MonedaBilet } from '../types';
+import { MONEDE, zero } from '../monede';
+import type { Bilet, Moneda, MonedaBilet } from '../types';
 
 function textBilete(b: Bilet[]): string {
   const t = totalBilete(b);
@@ -15,19 +16,19 @@ export function DecontScreen() {
   const { rezervari, bilete, curse, deconturi } = useStore();
   const [data, setData] = useState(azi());
   const [excluse, setExcluse] = useState<string[]>([]);
-  const [eur, setEur] = useState<string>();
-  const [ron, setRon] = useState<string>();
+  const [scrise, setScrise] = useState<Partial<Record<Moneda, string>>>({});
   const [note, setNote] = useState('');
 
   const rest = restDePredat(rezervari, deconturi);
   const nedecontate = bileteNedecontate(bilete, deconturi).sort((a, b) => (b.iesire ?? '').localeCompare(a.iesire ?? ''));
   const alese = nedecontate.filter((b) => !excluse.includes(b.id));
-  const valEur = eur ?? String(Math.max(rest.EUR, 0));
-  const valRon = ron ?? String(Math.max(rest.RON, 0));
-  const predatEur = Number(valEur) || 0;
-  const predatRon = Number(valRon) || 0;
-  const gol = predatEur <= 0 && predatRon <= 0 && alese.length === 0;
-  const depasit = predatEur > rest.EUR || predatRon > rest.RON;
+  const valoare = (m: Moneda) => scrise[m] ?? String(Math.max(rest[m], 0));
+  const predat = zero();
+  for (const m of MONEDE) predat[m] = Number(valoare(m)) || 0;
+  // EUR și RON se arată mereu; GBP/CHF doar când au fost încasate sau predate.
+  const vizibile = MONEDE.filter((m) => m === 'EUR' || m === 'RON' || rest[m] !== 0 || scrise[m] !== undefined);
+  const gol = MONEDE.every((m) => predat[m] <= 0) && alese.length === 0;
+  const depasit = MONEDE.some((m) => predat[m] > rest[m]);
 
   function comuta(id: string) {
     setExcluse(excluse.includes(id) ? excluse.filter((x) => x !== id) : [...excluse, id]);
@@ -40,13 +41,12 @@ export function DecontScreen() {
       id: newId(),
       creat: Date.now(),
       data,
-      predat: { EUR: predatEur, RON: predatRon },
+      predat,
       bilete: alese.map((b) => b.id),
       note: note.trim() || undefined,
     });
     setExcluse([]);
-    setEur(undefined);
-    setRon(undefined);
+    setScrise({});
     setNote('');
   }
 
@@ -72,7 +72,7 @@ export function DecontScreen() {
       </div>
       <div class="total">
         <span>De predat la firmă</span>
-        <strong>{textBani({ RON: Math.max(rest.RON, 0), EUR: Math.max(rest.EUR, 0) })}</strong>
+        <strong>{textBani(MONEDE.reduce((t, m) => ({ ...t, [m]: Math.max(rest[m], 0) }), zero()))}</strong>
       </div>
       <div class="total">
         <span>Bilete nedecontate ({nedecontate.length})</span>
@@ -86,12 +86,16 @@ export function DecontScreen() {
 
       <h2 class="day">Bani predați</h2>
       <div class="grid">
-        <Field label={`EUR (rest: ${fmtSuma(Math.max(rest.EUR, 0), 'EUR')})`}>
-          <input type="number" min={0} value={valEur} onInput={(e) => setEur(e.currentTarget.value)} />
-        </Field>
-        <Field label={`RON (rest: ${fmtSuma(Math.max(rest.RON, 0), 'RON')})`}>
-          <input type="number" min={0} value={valRon} onInput={(e) => setRon(e.currentTarget.value)} />
-        </Field>
+        {vizibile.map((m) => (
+          <Field key={m} label={`${m} (rest: ${fmtSuma(Math.max(rest[m], 0), m)})`}>
+            <input
+              type="number"
+              min={0}
+              value={valoare(m)}
+              onInput={(e) => setScrise({ ...scrise, [m]: e.currentTarget.value })}
+            />
+          </Field>
+        ))}
       </div>
       <p class="muted">Poți lăsa mai puțin decât restul: diferența rămâne de predat data viitoare.</p>
 

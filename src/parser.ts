@@ -41,7 +41,7 @@ interface Mesaj {
 }
 
 const SENDER = String.raw`\s*[^:\t]*:\s*`;
-const TELEFON_LA_INCEPUT = /^(?:\+|00)?\d[\d\s().-]*\d/;
+const TELEFON_LA_INCEPUT = /^(?:\+\s*|00)?\(?\d[\d\s().-]*\d/;
 const BANI = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:de\\s+)?(${CUVINTE_MONEDA})`, 'gi');
 const CUVINTE_PLATA = /achit|cash|plat[aă]\s+la|la\s+[sș]ofer|\bop\b|ordin\s+de\s+plat|fact\./i;
 
@@ -67,6 +67,16 @@ function adaugaZile(iso: string, zile: number): string {
 function azi(): string {
   const d = new Date();
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Spații în plus înainte de virgulă/punct (din tabele): „Ana , pers . contact" → „Ana, pers. contact". */
+function curataText(s: string): string {
+  return s.replace(/\s+([,.;])/g, '$1').replace(/([,;])(?=\S)/g, '$1 ').replace(/\s+/g, ' ').trim();
+}
+
+/** Loc de preluare/lăsare: fără „pentru" la început și fără spații în plus. */
+function curataAdresa(s: string): string {
+  return curataText(s).replace(/^pentru\s+/i, '');
 }
 
 function cifre(s: string): number {
@@ -101,7 +111,7 @@ function extrageTelefoane(celula: string): Telefon[] {
     const t = parte.trim();
     const m = t.match(TELEFON_LA_INCEPUT);
     if (!m || cifre(m[0]) < 8) continue;
-    const rest = t.slice(m[0].length).replace(/^[\s:-]+/, '').trim();
+    const rest = curataText(t.slice(m[0].length).replace(/^[\s:-]+/, ''));
     rezultat.push({ numar: m[0].trim().replace(/\s+/g, ' '), eticheta: rest || undefined });
   }
   return rezultat;
@@ -376,7 +386,8 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
     if (t && !ora) {
       ora = normOra(t[1], t[2]);
       const rest = t[3].replace(/^[\s,;-]+/, '').replace(/\s*,\s*/g, ', ').trim();
-      if (/^(preluare|decolare|aterizare)$/i.test(rest)) note.push(`Ora: ${rest.toLowerCase()}`);
+      if (/^preluare$/i.test(rest)) { /* ora de preluare e chiar ora rezervării */ }
+      else if (/^(decolare|aterizare)$/i.test(rest)) note.push(`Ora: ${rest.toLowerCase()}`);
       else if (rest) ({ zbor, orasZbor } = parseZbor(rest));
       return;
     }
@@ -410,8 +421,8 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
     }
 
     if (plata) eticheta.push(c);
-    else if (ora) lasare ??= c;
-    else if (!preluare) preluare = c;
+    else if (ora) lasare ??= curataAdresa(c);
+    else if (!preluare) preluare = curataAdresa(c);
     else note.push(c);
   });
 

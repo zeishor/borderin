@@ -36,7 +36,7 @@ describe('rezervări de aeroport', () => {
     expect(r.zbor).toBeUndefined();
     expect(r.lasare).toBe('Aeroport Budapesta');
     expect(r.plata.stare).toBe('achitat');
-    expect(r.observatii).toContain('preluare');
+    expect(r.observatii).toBeUndefined();
   });
 
   it('ora cu punct și virgulă, nume cu majuscule, liniuță în loc de nume', () => {
@@ -112,15 +112,15 @@ describe('grup, mai multe telefoane, observații', () => {
 
   it('rând „altele": grup, telefon - nume, destinație, firmă', () => {
     const r = parseMesaje(
-      t('Grup aprox 15 Pax', '', '0700000011 - Ana Exemplu', '2026-11-17', 'altele', 'Timisoara , Str. Test 1 Firma', 'aprox. 15 pax - Tur ora 16:00 : Str. Test 1 - Loc Departe , Retur ora 20:00 : Loc Departe - Str. Test 1', '16:00 , preluare', 'Loc Departe , crama', '1000 lei , cash la sofer', '', 'Firma'),
+      t('Grup aprox 15 Pax', '', '0700000011 - Ana Exemplu', '2026-11-17', 'altele', 'Timisoara , Str. Test 1 Firma', 'aprox. 15 pax - Tur ora 16:00 : Str. Test 1 - Loc Departe , Retur ora 20:00 : Loc Departe - Str. Test 1', '16:00 , preluare', 'Loc Departe, crama', '1000 lei , cash la sofer', '', 'Firma'),
       AZI,
     );
     const x = r.rezervari[0];
     expect(x.nume).toBe('Ana Exemplu');
     expect(x.telefoane).toEqual([{ numar: '0700000011', eticheta: undefined }]);
     expect(x.pasageri).toBe(15);
-    expect(x.preluare).toBe('Timisoara , Str. Test 1 Firma');
-    expect(x.lasare).toBe('Loc Departe , crama');
+    expect(x.preluare).toBe('Timisoara, Str. Test 1 Firma');
+    expect(x.lasare).toBe('Loc Departe, crama');
     expect(x.eticheta).toBe('Firma');
     expect(x.plata).toMatchObject({ suma: 1000, moneda: 'RON', metoda: 'cash' });
     expect(r.destinatie).toBe('Loc Departe');
@@ -362,5 +362,22 @@ describe('monede suplimentare', () => {
       { suma: 35, moneda: 'GBP' },
       { suma: 220, moneda: 'RON' },
     ]);
+  });
+});
+
+describe('persoană de contact și „pentru" la lăsare', () => {
+  it('telefon cu +(40), contact ca etichetă, fără „preluare" în note', () => {
+    const r = parseMesaje(
+      t('Vivek - PRIVAT', '-', '+(40) 790 010 586 - Cristiana Bosnea , pers . de contact', '2026-11-19', 'Timisoara-Budapesta', 'Varroc', 'Soferul va trebui sa aiba un semn vizibil cu inscriptia VARROC, astfel ancat Vivek sa poata identifica cu usurinta soferul.', '16:30 , preluare', 'pentru Budapesta , centru', 'Achitat'),
+      AZI,
+    ).rezervari[0];
+    expect(r.nume).toBe('Vivek');
+    expect(r.eticheta).toBe('PRIVAT');
+    expect(r.telefoane).toEqual([{ numar: '+(40) 790 010 586', eticheta: 'Cristiana Bosnea, pers. de contact' }]);
+    expect(r.ora).toBe('16:30');
+    expect(r.preluare).toBe('Varroc');
+    expect(r.lasare).toBe('Budapesta, centru');
+    expect(r.observatii).not.toContain('preluare');
+    expect(r.plata.stare).toBe('achitat');
   });
 });

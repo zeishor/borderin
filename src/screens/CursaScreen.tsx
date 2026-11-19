@@ -8,6 +8,7 @@ import { aplicaPeCursa, rezervareDinExtras } from '../importa';
 import { Field, Screen } from '../ui';
 import { linkZbor } from '../zbor';
 import { NavButoane } from '../navbuton';
+import { traseu } from '../traseu';
 import type { Rezervare } from '../types';
 
 function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
@@ -99,6 +100,7 @@ export function CursaScreen({ id }: { id: string }) {
   return (
     <Screen title={titluCursa(cursa)} backTo="/">
       <p class="muted">{fmtData(cursa.data)}</p>
+      <p class="muted">{traseu(cursa, ale).join(' → ')}</p>
 
       <div class="grid">
         <Field label="Destinația">

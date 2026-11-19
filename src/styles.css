@@ -99,6 +99,11 @@ textarea { width: 100%; resize: vertical; }
 input, select { width: 100%; }
 button { cursor: pointer; transition: transform .08s ease, opacity .15s; }
 button:active { transform: scale(.98); }
+label.btn {
+  display: inline-flex; align-items: center; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 12px; min-height: 44px;
+}
 button.icon { width: 44px; padding: 0; background: transparent; border: 0; font-size: 1.3rem; }
 button.primary {
   background: var(--accent); border-color: var(--accent); color: #fff;
@@ -131,7 +136,23 @@ button.danger { color: var(--danger); width: 100%; margin-top: 28px; background:
   text-align: left; margin-bottom: 10px; padding: 14px;
   border: 0; border-radius: 16px; box-shadow: var(--shadow);
 }
+h2.day.separator { margin-top: 28px; }
 .trip-titlu { font-size: 1.05rem; }
+.trip-cap { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+
+/* Starea cursei: culoare pe margine și etichetă */
+.trip { border-left: 6px solid var(--line); }
+.stare-eticheta {
+  flex: none; padding: 3px 10px; border-radius: 999px; font-size: .75rem; font-weight: 700;
+  background: var(--bg); color: var(--muted);
+}
+.trip.st-in-curs { border-left-color: var(--ok); background: var(--ok-soft); }
+.stare-eticheta.st-in-curs { background: var(--ok); color: #fff; }
+.trip.st-urmatoarea { border-left-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+.stare-eticheta.st-urmatoarea { background: var(--accent); color: #fff; }
+.trip.st-viitoare { border-left-color: var(--warn); }
+.stare-eticheta.st-viitoare { background: var(--warn-soft); color: var(--warn); }
+.trip.st-terminata { border-left-color: var(--line); opacity: .65; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .chip {
   display: inline-flex; align-items: center; gap: 4px;

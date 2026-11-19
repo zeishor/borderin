@@ -1,19 +1,38 @@
 import { go } from '../router';
+import { useEffect, useState } from 'preact/hooks';
 import { useStore } from '../store';
+import { ETICHETE_STARE, interval, stari } from '../stare';
 import { arePlataIncasata, fmtData, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Screen } from '../ui';
 import { traseu } from '../traseu';
 
 export function ListaCurse() {
-  const { curse, rezervari, masini } = useStore();
-  const sortate = [...curse].sort((a, b) => b.data.localeCompare(a.data) || b.creat - a.creat);
+  const { curse, rezervari, masini, setari } = useStore();
+  const [acum, setAcum] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setAcum(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
-  const grupuri: { data: string; curse: typeof curse }[] = [];
-  for (const c of sortate) {
-    const g = grupuri[grupuri.length - 1];
-    if (g && g.data === c.data) g.curse.push(c);
-    else grupuri.push({ data: c.data, curse: [c] });
-  }
+  const stare = stari(curse, setari, acum);
+  const start = (c: (typeof curse)[number]) => interval(c, setari).start;
+  // Întâi ce urmează (în curs și viitoare, cea mai apropiată sus), apoi cursele terminate, cele mai noi sus.
+  const active = curse.filter((c) => stare.get(c.id) !== 'terminata').sort((a, b) => start(a) - start(b));
+  const terminate = curse.filter((c) => stare.get(c.id) === 'terminata').sort((a, b) => start(b) - start(a));
+
+  const grupe = (lista: typeof curse) => {
+    const grupuri: { data: string; curse: typeof curse }[] = [];
+    for (const c of lista) {
+      const g = grupuri[grupuri.length - 1];
+      if (g && g.data === c.data) g.curse.push(c);
+      else grupuri.push({ data: c.data, curse: [c] });
+    }
+    return grupuri;
+  };
+  const grupuri = [
+    ...grupe(active).map((g) => ({ ...g, cheie: `a${g.data}`, separator: undefined as string | undefined })),
+    ...grupe(terminate).map((g, i) => ({ ...g, cheie: `t${g.data}`, separator: i === 0 ? 'Terminate' : undefined })),
+  ];
 
   return (
     <Screen title="Borderin" tabs banner>
@@ -21,14 +40,19 @@ export function ListaCurse() {
         <p class="empty">Nicio cursă încă. Apasă „Cursă nouă” și lipește mesajele de la dispecer.</p>
       )}
       {grupuri.map((g) => (
-        <section key={g.data}>
+        <section key={g.cheie}>
+          {g.separator && <h2 class="day separator">{g.separator}</h2>}
           <h2 class="day">{fmtData(g.data)}</h2>
           {g.curse.map((c) => {
             const ale = rezervari.filter((r) => r.cursaId === c.id);
             const masina = masini.find((m) => m.id === c.masinaId);
+            const st = stare.get(c.id) ?? 'viitoare';
             return (
-              <button key={c.id} class="card trip" onClick={() => go(`/cursa/${c.id}`)}>
-                <strong class="trip-titlu">{titluCursa(c)}</strong>
+              <button key={c.id} class={`card trip st-${st}`} onClick={() => go(`/cursa/${c.id}`)}>
+                <span class="trip-cap">
+                  <strong class="trip-titlu">{titluCursa(c)}</strong>
+                  <span class={`stare-eticheta st-${st}`}>{ETICHETE_STARE[st]}</span>
+                </span>
                 <span class="traseu">
                   {traseu(c, ale).map((oras, i, t) => (
                     <span key={i} class={i === 0 ? 'stop prima' : i === t.length - 1 ? 'stop ultima' : 'stop'}>

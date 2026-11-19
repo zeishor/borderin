@@ -3,6 +3,7 @@ import { deleteMasina, newId, saveMasina, saveSetari, useStore } from '../store'
 import { Field, Screen } from '../ui';
 import { salveazaTema, TEME, temaAleasa, type Tema } from '../tema';
 import { NAVIGATII, navigatieAleasa, salveazaNavigatie, type Navigatie } from '../nav';
+import { citesteBackup, exporta, importa, numeFisierBackup } from '../backup';
 import { salveazaTracker, TRACKERE, trackerAles, type Tracker } from '../zbor';
 
 export function SetariScreen() {
@@ -17,6 +18,32 @@ export function SetariScreen() {
     if (!nume.trim()) return;
     await saveMasina({ id: newId(), nume: nume.trim(), locuri });
     setNume('');
+  }
+
+  const [mesajBackup, setMesajBackup] = useState('');
+
+  async function descarcaBackup() {
+    const url = URL.createObjectURL(await exporta());
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = numeFisierBackup();
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    setMesajBackup('Backup descărcat.');
+  }
+
+  async function incarcaBackup(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const fisier = input.files?.[0];
+    input.value = '';
+    if (!fisier) return;
+    try {
+      const f = citesteBackup(await fisier.text());
+      if (!confirm('Adaug datele din backup? Înregistrările cu același id se suprascriu, restul rămân.')) return;
+      setMesajBackup(`Importate ${await importa(f)} înregistrări.`);
+    } catch (err) {
+      setMesajBackup(err instanceof Error ? err.message : 'Importul a eșuat.');
+    }
   }
 
   return (
@@ -38,6 +65,17 @@ export function SetariScreen() {
         <input class="narrow" type="number" min={1} value={locuri} onInput={(e) => setLocuri(Number(e.currentTarget.value) || 1)} />
         <button onClick={adauga}>Adaugă</button>
       </div>
+
+      <h2 class="day">Backup date</h2>
+      <p class="muted">Datele stau doar în telefon. Descarcă din când în când un backup și păstrează-l în altă parte.</p>
+      <div class="row">
+        <button onClick={descarcaBackup}>Descarcă backup</button>
+        <label class="btn">
+          Importă backup
+          <input type="file" accept="application/json,.json" hidden onChange={incarcaBackup} />
+        </label>
+      </div>
+      {mesajBackup && <p class="muted">{mesajBackup}</p>}
 
       <h2 class="day">Aspect</h2>
       <Field label="Temă">

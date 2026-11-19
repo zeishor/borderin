@@ -7,31 +7,61 @@ const norm = (s: string) =>
     .toLowerCase()
     .trim();
 
-const titlu = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+/** „ARAD" → „Arad"; un nume scris normal rămâne așa cum e. */
+function nume(s: string): string {
+  if (s !== s.toUpperCase()) return s;
+  return s.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_, a: string, b: string) => a + b.toUpperCase());
+}
+
+const STRADA = /\b(str\.?|strada|b-?dul\.?|bulevardul|calea|aleea|bl\.?|nr\.?)(?=\s|\.|\d|$)/i;
+const ORAS_CUNOSCUT = /budapest|arad|oradea|belgrad|viena|cluj|sibiu|szeged|debrecen|lugoj|deva|resita|reșița/i;
 
 /**
- * Oprirea de pe traseu: Timișoara → locurile cursei → Timișoara.
- * Locurile vin din destinația cursei („Budapesta - Arad" se desparte) și din aeroporturile
- * rezervărilor („Aeroport Arad"), în ordinea apariției: întâi dus, apoi retur.
+ * Localitățile dintr-un loc de preluare/lăsare: „Sacalaz, Str. A 5 (Ana) + Timisoara, Str. B" → Sacalaz, Timisoara;
+ * „Aeroport Arad" → Arad. Un nume singur, necunoscut („Varroc"), e luat drept localitate doar când
+ * `capat` e adevărat (locul e la capătul dinspre destinație); altfel e probabil un loc din Timișoara.
+ */
+function localitati(loc: string | undefined, capat: boolean): string[] {
+  const rezultat: string[] = [];
+  for (const stop of (loc ?? '').split(/\s+\+\s+/)) {
+    const fara = stop.replace(/\([^)]*\)/g, '').trim();
+    const aeroport = fara.match(/^aeroport(?:ul)?\s+(.+)$/i);
+    if (aeroport) {
+      rezultat.push(aeroport[1].split(',')[0].trim());
+      continue;
+    }
+    const [prima, ...rest] = fara.split(',').map((x) => x.trim());
+    let candidat = prima ?? '';
+    const strada = candidat.match(STRADA);
+    if (strada?.index !== undefined) candidat = candidat.slice(0, strada.index).replace(/[\s\-–—:]+$/, '');
+    if (!candidat || /\d/.test(candidat)) continue;
+    if (strada || rest.length || capat || ORAS_CUNOSCUT.test(candidat)) rezultat.push(candidat);
+  }
+  return rezultat;
+}
+
+/**
+ * Opririle de pe traseu: Timișoara → locurile cursei → Timișoara.
+ * Locurile vin din preluările de la dus (altă localitate decât Timișoara), din destinația cursei
+ * („Budapesta - Arad" se desparte), din lăsările de la dus și din preluările/lăsările de la retur
+ * (ex. retur în Arad), fiecare în ordinea apariției, fără dubluri.
  */
 export function traseu(cursa: Cursa, rezervari: Rezervare[]): string[] {
   const locuri: string[] = [];
-  const adauga = (nume: string) => {
-    const n = nume.trim();
-    if (!n || norm(n) === 'timisoara' || locuri.some((l) => norm(l) === norm(n))) return;
-    locuri.push(n);
+  const adauga = (n: string) => {
+    const t = n.trim();
+    if (!t || norm(t) === 'timisoara' || locuri.some((l) => norm(l) === norm(t))) return;
+    locuri.push(nume(t));
   };
 
-  for (const parte of cursa.destinatie.split(/\s*(?:[-–—,/>→]+|\s\+\s)\s*/)) adauga(parte);
+  const dus = rezervari.filter((r) => r.directie === 'dus');
+  const retur = rezervari.filter((r) => r.directie !== 'dus');
 
-  const ordonate = [...rezervari].sort((a, b) => (a.directie === b.directie ? 0 : a.directie === 'dus' ? -1 : 1));
-  for (const r of ordonate) {
-    const aeroport = (r.directie === 'dus' ? [r.lasare, r.preluare] : [r.preluare, r.lasare]).filter(Boolean) as string[];
-    for (const loc of aeroport) {
-      const m = loc.match(/^aeroport\s+(.+)$/i);
-      if (m) adauga(titlu(m[1]));
-    }
-  }
+  for (const r of dus) localitati(r.preluare, false).forEach(adauga);
+  for (const parte of cursa.destinatie.split(/\s*(?:[-–—,/>→]+|\s\+\s)\s*/)) adauga(parte);
+  for (const r of dus) localitati(r.lasare, true).forEach(adauga);
+  for (const r of retur) localitati(r.preluare, true).forEach(adauga);
+  for (const r of retur) localitati(r.lasare, false).forEach(adauga);
 
   return ['Timișoara', ...locuri, 'Timișoara'];
 }

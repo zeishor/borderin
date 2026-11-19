@@ -35,12 +35,21 @@ export async function getAll<T>(store: StoreName): Promise<T[]> {
   return wrap(db.transaction(store).objectStore(store).getAll() as IDBRequest<T[]>);
 }
 
+/** Rezolvă abia când tranzacția e încheiată (scrierea e durabilă), nu doar când cererea a reușit. */
+function scrie(db: IDBDatabase, store: StoreName, op: (s: IDBObjectStore) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    op(tx.objectStore(store));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
 export async function put<T extends { id: string }>(store: StoreName, value: T): Promise<void> {
-  const db = await open();
-  await wrap(db.transaction(store, 'readwrite').objectStore(store).put(value));
+  await scrie(await open(), store, (s) => s.put(value));
 }
 
 export async function remove(store: StoreName, id: string): Promise<void> {
-  const db = await open();
-  await wrap(db.transaction(store, 'readwrite').objectStore(store).delete(id));
+  await scrie(await open(), store, (s) => s.delete(id));
 }

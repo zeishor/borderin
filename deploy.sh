@@ -2,6 +2,7 @@
 # Construiește și publică aplicația pe ramura gh-pages (GitHub Pages).
 set -euo pipefail
 cd "$(dirname "$0")"
+npm test
 npm run build
 tmp=$(mktemp -d)
 cp -r dist/. "$tmp"

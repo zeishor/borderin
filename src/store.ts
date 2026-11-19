@@ -75,12 +75,23 @@ export async function saveCursa(c: Cursa): Promise<void> {
 export async function deleteCursa(id: string): Promise<void> {
   const ale = state.rezervari.filter((r) => r.cursaId === id);
   await Promise.all(ale.map((r) => remove('rezervari', r.id)));
-  await Promise.all(state.bilete.filter((b) => b.cursaId === id).map((b) => remove('bilete', b.id)));
+  const bileteSterse = new Set(state.bilete.filter((b) => b.cursaId === id).map((b) => b.id));
+  await Promise.all([...bileteSterse].map((bid) => remove('bilete', bid)));
+  // Deconturile nu mai trebuie să trimită către bilete care nu mai există.
+  const deconturi = await Promise.all(
+    state.deconturi.map(async (d) => {
+      if (!d.bilete.some((bid) => bileteSterse.has(bid))) return d;
+      const curat = { ...d, bilete: d.bilete.filter((bid) => !bileteSterse.has(bid)) };
+      await put('deconturi', curat);
+      return curat;
+    }),
+  );
   await remove('curse', id);
   update({
     curse: state.curse.filter((c) => c.id !== id),
     rezervari: state.rezervari.filter((r) => r.cursaId !== id),
     bilete: state.bilete.filter((b) => b.cursaId !== id),
+    deconturi,
   });
 }
 

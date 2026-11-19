@@ -132,6 +132,27 @@ export function SetariScreen() {
       </Field>
       <p class="muted">Se deschide ca link; dacă aplicația e instalată, telefonul o poate deschide direct pe ea.</p>
 
+      <h2 class="day">Spălătorie (decont)</h2>
+      <Field label="Spălare mașină mică, până la 4 locuri (RON)">
+        <input
+          type="number"
+          min={0}
+          step={1}
+          value={setari.spalatorieMicaRon}
+          onInput={(e) => saveSetari({ ...setari, spalatorieMicaRon: Number(e.currentTarget.value) || 0 })}
+        />
+      </Field>
+      <Field label="Spălare mașină mare, peste 4 locuri (RON)">
+        <input
+          type="number"
+          min={0}
+          step={1}
+          value={setari.spalatorieMareRon}
+          onInput={(e) => saveSetari({ ...setari, spalatorieMareRon: Number(e.currentTarget.value) || 0 })}
+        />
+      </Field>
+      <p class="muted">Suma fixă care se decontează la fiecare spălare. Mașina cursei hotărăște ce sumă se aplică.</p>
+
       <h2 class="day">Cursă „extra”</h2>
       <Field label="Prag (ore, durata totală a cursei)">
         <input

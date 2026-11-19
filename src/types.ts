@@ -62,6 +62,8 @@ export interface Cursa {
   /** HH:MM, ora retur de la destinație. */
   retur?: string;
   note?: string;
+  /** De câte ori a fost spălată mașina în această cursă. */
+  spalari?: number;
 }
 
 export interface Setari {
@@ -69,6 +71,10 @@ export interface Setari {
   pragExtraOre: number;
   /** Durata drumului destinație → Timișoara. */
   drumInapoiOre: number;
+  /** Cât se decontează pentru o spălare a mașinii mici (până la 4 locuri), în RON. */
+  spalatorieMicaRon: number;
+  /** Cât se decontează pentru o spălare a mașinii mari (peste 4 locuri), în RON. */
+  spalatorieMareRon: number;
 }
 
 export type MonedaBilet = 'HUF' | 'EUR' | 'RON';
@@ -101,5 +107,7 @@ export interface Decont {
   predat: Record<Moneda, number>;
   /** Biletele decontate cu această ocazie. */
   bilete: string[];
+  /** Spălările decontate: câte, din ce cursă, și suma (RON) la prețul din momentul decontului. */
+  spalatorii?: { cursaId: string; nr: number; suma: number }[];
   note?: string;
 }

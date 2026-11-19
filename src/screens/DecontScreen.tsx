@@ -4,6 +4,7 @@ import { azi, fmtData, fmtMoment, fmtSuma, fmtSumaBilet, incasat, textBani, titl
 import { deleteDecont, newId, saveDecont, useStore } from '../store';
 import { Field, Screen } from '../ui';
 import { MONEDE, zero } from '../monede';
+import { pretSpalare, spalariNedecontate } from '../spalatorie';
 import type { Bilet, Moneda, MonedaBilet } from '../types';
 
 function textBilete(b: Bilet[]): string {
@@ -13,11 +14,12 @@ function textBilete(b: Bilet[]): string {
 }
 
 export function DecontScreen() {
-  const { rezervari, bilete, curse, deconturi } = useStore();
+  const { rezervari, bilete, curse, deconturi, masini, setari } = useStore();
   const [data, setData] = useState(azi());
   const [excluse, setExcluse] = useState<string[]>([]);
   const [scrise, setScrise] = useState<Partial<Record<Moneda, string>>>({});
   const [note, setNote] = useState('');
+  const [excluseSpal, setExcluseSpal] = useState<string[]>([]);
 
   const rest = restDePredat(rezervari, deconturi);
   const nedecontate = bileteNedecontate(bilete, deconturi).sort((a, b) => (b.iesire ?? '').localeCompare(a.iesire ?? ''));
@@ -27,7 +29,17 @@ export function DecontScreen() {
   for (const m of MONEDE) predat[m] = Number(valoare(m)) || 0;
   // EUR și RON se arată mereu; GBP/CHF doar când au fost încasate sau predate.
   const vizibile = MONEDE.filter((m) => m === 'EUR' || m === 'RON' || rest[m] !== 0 || scrise[m] !== undefined);
-  const gol = MONEDE.every((m) => predat[m] <= 0) && alese.length === 0;
+  const spalatorii = curse
+    .map((c) => {
+      const nr = spalariNedecontate(c, deconturi);
+      return { cursa: c, nr, suma: nr * pretSpalare(masini.find((m) => m.id === c.masinaId), setari) };
+    })
+    .filter((x) => x.nr > 0)
+    .sort((a, b) => b.cursa.data.localeCompare(a.cursa.data));
+  const spalAlese = spalatorii.filter((x) => !excluseSpal.includes(x.cursa.id));
+  const sumaSpal = (l: typeof spalatorii) => l.reduce((t, x) => t + x.suma, 0);
+  const nrSpal = (l: typeof spalatorii) => l.reduce((t, x) => t + x.nr, 0);
+  const gol = MONEDE.every((m) => predat[m] <= 0) && alese.length === 0 && spalAlese.length === 0;
   const depasit = MONEDE.some((m) => predat[m] > rest[m]);
 
   function comuta(id: string) {
@@ -43,9 +55,11 @@ export function DecontScreen() {
       data,
       predat,
       bilete: alese.map((b) => b.id),
+      spalatorii: spalAlese.length ? spalAlese.map((x) => ({ cursaId: x.cursa.id, nr: x.nr, suma: x.suma })) : undefined,
       note: note.trim() || undefined,
     });
     setExcluse([]);
+    setExcluseSpal([]);
     setScrise({});
     setNote('');
   }
@@ -77,6 +91,11 @@ export function DecontScreen() {
       <div class="total">
         <span>Bilete nedecontate ({nedecontate.length})</span>
         <strong>{textBilete(nedecontate)}</strong>
+      </div>
+
+      <div class="total">
+        <span>Spălătorie nedecontată ({nrSpal(spalatorii)})</span>
+        <strong>{fmtSuma(sumaSpal(spalatorii), 'RON')}</strong>
       </div>
 
       <h2 class="day">Decont nou</h2>
@@ -121,6 +140,33 @@ export function DecontScreen() {
       ))}
       {alese.length > 0 && <p class="muted">Total bilete alese: {textBilete(alese)}</p>}
 
+      <h2 class="day">
+        Spălătorie ({spalAlese.length} din {spalatorii.length})
+      </h2>
+      {spalatorii.length === 0 && <p class="muted">Nicio spălare nedecontată.</p>}
+      {spalatorii.map((x) => (
+        <label class="row" key={x.cursa.id}>
+          <input
+            type="checkbox"
+            style="width:auto;min-height:0"
+            checked={!excluseSpal.includes(x.cursa.id)}
+            onChange={() =>
+              setExcluseSpal(
+                excluseSpal.includes(x.cursa.id) ? excluseSpal.filter((i) => i !== x.cursa.id) : [...excluseSpal, x.cursa.id],
+              )
+            }
+          />
+          <span class="grow">
+            <strong>
+              {x.nr} × spălare · {fmtSuma(x.suma, 'RON')}
+            </strong>
+            <br />
+            <span class="muted">{titluCursaDe(x.cursa.id)}</span>
+          </span>
+        </label>
+      ))}
+      {spalAlese.length > 0 && <p class="muted">Total spălătorie aleasă: {fmtSuma(sumaSpal(spalAlese), 'RON')}</p>}
+
       <Field label="Notă (opțional)">
         <input value={note} onInput={(e) => setNote(e.currentTarget.value)} />
       </Field>
@@ -140,6 +186,9 @@ export function DecontScreen() {
               <br />
               <span class="muted">
                 {d.bilete.length} bilete{bd.length ? ` · ${textBilete(bd)}` : ''}
+                {d.spalatorii?.length
+                  ? ` · ${d.spalatorii.reduce((n, s) => n + s.nr, 0)} spălări · ${fmtSuma(d.spalatorii.reduce((t, s) => t + s.suma, 0), 'RON')}`
+                  : ''}
                 {d.note ? ` · ${d.note}` : ''}
               </span>
             </span>

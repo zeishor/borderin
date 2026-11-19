@@ -66,6 +66,11 @@ export function ListaCurse() {
                   <span class="chip">📋 {ale.length} rezervări</span>
                   <span class="chip">🚐 {masina ? masina.nume : 'fără mașină'}</span>
                   {c.plecare && <span class="chip">🕒 {c.plecare}</span>}
+                  {st !== 'viitoare' && st !== 'urmatoarea' && (
+                    <span class={(c.spalari ?? 0) > 0 ? 'chip spal-da' : 'chip spal-nu'}>
+                      🧽 {(c.spalari ?? 0) > 0 ? `✓ ×${c.spalari}` : '✗'}
+                    </span>
+                  )}
                 </span>
                 <span class="chips">
                   <span class="pill de-incasat">De încasat {textDeIncasat(ale)}</span>

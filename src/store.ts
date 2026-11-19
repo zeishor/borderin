@@ -12,7 +12,7 @@ interface State {
 }
 
 const SETARI_ID = 'setari';
-const SETARI_IMPLICITE: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5 };
+const SETARI_IMPLICITE: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5, spalatorieMicaRon: 0, spalatorieMareRon: 0 };
 
 let state: State = { curse: [], rezervari: [], masini: [], setari: SETARI_IMPLICITE, bilete: [], deconturi: [] };
 const listeners = new Set<() => void>();
@@ -43,7 +43,12 @@ export async function initStore(): Promise<void> {
     bilete,
     deconturi,
     setari: salvate
-      ? { pragExtraOre: salvate.pragExtraOre, drumInapoiOre: salvate.drumInapoiOre }
+      ? {
+          pragExtraOre: salvate.pragExtraOre,
+          drumInapoiOre: salvate.drumInapoiOre,
+          spalatorieMicaRon: salvate.spalatorieMicaRon ?? 0,
+          spalatorieMareRon: salvate.spalatorieMareRon ?? 0,
+        }
       : SETARI_IMPLICITE,
   });
 }

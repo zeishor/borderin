@@ -159,6 +159,8 @@ h2.day.separator { margin-top: 28px; }
   padding: 3px 10px; border-radius: 999px; font-size: .8rem; font-weight: 500;
   background: var(--bg); color: var(--muted);
 }
+.chip.spal-da { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
+.chip.spal-nu { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); font-weight: 700; }
 .chip.zbor { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 .pill { display: inline-flex; padding: 4px 12px; border-radius: 999px; font-size: .82rem; font-weight: 700; }
 .pill.de-incasat { background: var(--warn-soft); color: var(--warn); }

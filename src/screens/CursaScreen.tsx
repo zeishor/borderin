@@ -9,6 +9,7 @@ import { Field, Screen } from '../ui';
 import { linkZbor } from '../zbor';
 import { NavButoane } from '../navbuton';
 import { traseu } from '../traseu';
+import { pretSpalare, spalariDecontate } from '../spalatorie';
 import type { Rezervare } from '../types';
 
 function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
@@ -61,7 +62,7 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
 }
 
 export function CursaScreen({ id }: { id: string }) {
-  const { curse, rezervari, masini, bilete } = useStore();
+  const { curse, rezervari, masini, bilete, setari, deconturi } = useStore();
   const [adauga, setAdauga] = useState('');
   const cursa = curse.find((c) => c.id === id);
   if (!cursa) return <Screen title="Cursă" backTo="/"><p class="empty">Cursa nu există.</p></Screen>;
@@ -71,6 +72,11 @@ export function CursaScreen({ id }: { id: string }) {
   const dus = ale.filter((r) => r.directie === 'dus');
   const retur = ale.filter((r) => r.directie === 'retur');
   const set = (patch: Partial<typeof cursa>) => saveCursa({ ...cursa, ...patch });
+
+  const masina = masini.find((m) => m.id === cursa.masinaId);
+  const spalari = cursa.spalari ?? 0;
+  const pret = pretSpalare(masina, setari);
+  const decontate = spalariDecontate(id, deconturi);
 
   async function adaugaMesaje() {
     const rezultat = parseMesaje(adauga);
@@ -137,6 +143,25 @@ export function CursaScreen({ id }: { id: string }) {
 
       <Sectiune titlu={`Dus: Timișoara → ${cursa.destinatie || '?'}`} lista={dus} />
       <Sectiune titlu={`Retur: ${cursa.destinatie || '?'} → Timișoara`} lista={retur} />
+
+      <h2 class="day">Spălătorie</h2>
+      <div class="row">
+        <button class="primary grow" disabled={!masina} onClick={() => set({ spalari: spalari + 1 })}>
+          🧽 Spălătorie{spalari > 0 ? ` ×${spalari}` : ''}
+        </button>
+        {spalari > decontate && (
+          <button aria-label="Scade o spălare" onClick={() => set({ spalari: spalari - 1 || undefined })}>
+            −1
+          </button>
+        )}
+      </div>
+      <p class="muted">
+        {!masina
+          ? 'Alege mașina cursei ca să se știe ce sumă se decontează.'
+          : pret > 0
+            ? `${pret} lei la fiecare spălare${spalari > 0 ? ` · în total ${pret * spalari} lei` : ''}${decontate > 0 ? ` · ${decontate} deja decontate` : ''}`
+            : 'Suma pentru spălătorie nu e setată (Setări).'}
+      </p>
 
       <h2 class="day">Bilete aeroport</h2>
       {aleBilete.map((b) => (

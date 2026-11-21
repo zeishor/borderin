@@ -64,6 +64,25 @@ export interface Cursa {
   note?: string;
   /** De câte ori a fost spălată mașina în această cursă. */
   spalari?: number;
+  /** Suma pentru șofer, în lei: din lista de prețuri sau scrisă manual. */
+  sumaSofer?: number;
+  /** De unde vine suma („Șilagiu → Buziaș"), „manual" sau „Preț lipsă: …". */
+  sumaSursa?: string;
+}
+
+/** Monedele cu curs de schimb față de leu (RON are cursul 1). */
+export type MonedaCurs = 'EUR' | 'GBP' | 'CHF' | 'HUF';
+/** Cât valorează 1 unitate din monedă, în lei. */
+export type Cursuri = Partial<Record<MonedaCurs, number>>;
+
+/**
+ * O localitate cu preț. Mamă: are `sumaRon` (suma pe cursă, în lei). Limitrofă: are `mamaId` și ia suma mamei.
+ */
+export interface Localitate {
+  id: string;
+  nume: string;
+  mamaId?: string;
+  sumaRon?: number;
 }
 
 export interface Setari {
@@ -75,6 +94,10 @@ export interface Setari {
   spalatorieMicaRon: number;
   /** Cât se decontează pentru o spălare a mașinii mari (peste 4 locuri), în RON. */
   spalatorieMareRon: number;
+  /** Cursuri de schimb: 1 EUR = x lei etc. Lipsa unui curs înseamnă „necunoscut". */
+  cursuri: Cursuri;
+  /** Salariul de bază lunar, în lei. Nu se decontează, doar se afișează în rezumatul lunii. */
+  salariuBazaRon: number;
 }
 
 export type MonedaBilet = 'HUF' | 'EUR' | 'RON';
@@ -109,5 +132,11 @@ export interface Decont {
   bilete: string[];
   /** Spălările decontate: câte, din ce cursă, și suma (RON) la prețul din momentul decontului. */
   spalatorii?: { cursaId: string; nr: number; suma: number }[];
+  /** Cursele decontate, cu suma (lei) din momentul decontului. */
+  curse?: { cursaId: string; suma: number }[];
+  /** Cursurile (lei pentru 1 unitate) folosite la acest decont. */
+  cursuri?: Cursuri;
+  /** Rezultatul în lei: pozitiv = de primit de la firmă, negativ = de predat firmei. */
+  soldRon?: number;
   note?: string;
 }

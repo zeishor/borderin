@@ -5,11 +5,14 @@ import { azi } from '../format';
 import { parseMesaje } from '../parser';
 import { aplicaPeCursa, rezervareDinExtras } from '../importa';
 import { Field, Screen } from '../ui';
+import { useCerePret } from '../cerepret';
+import { aplicaPret, opririCursa } from '../preturi';
 
 export function CursaNoua() {
   const [text, setText] = useState('');
   const [dataManual, setDataManual] = useState<string>();
   const [destinatieManuala, setDestinatieManuala] = useState<string>();
+  const { element, calculeaza } = useCerePret();
 
   const rezultat = useMemo(() => parseMesaje(text), [text]);
   const data = dataManual ?? rezultat.data ?? azi();
@@ -18,9 +21,11 @@ export function CursaNoua() {
   async function creeaza() {
     const acum = Date.now();
     const id = newId();
-    const cursa = aplicaPeCursa({ id, creat: acum, modificat: acum, data, destinatie }, rezultat);
+    const rezervari = rezultat.rezervari.map((e) => rezervareDinExtras(id, e));
+    let cursa = aplicaPeCursa({ id, creat: acum, modificat: acum, data, destinatie }, rezultat);
+    cursa = aplicaPret(cursa, await calculeaza(opririCursa(cursa, rezervari)));
     await saveCursa(cursa);
-    for (const e of rezultat.rezervari) await saveRezervare(rezervareDinExtras(id, e));
+    for (const r of rezervari) await saveRezervare(r);
     go(`/cursa/${id}`);
   }
 
@@ -58,6 +63,7 @@ export function CursaNoua() {
       <button class="primary" onClick={creeaza} disabled={!data}>
         Creează cursa
       </button>
+      {element}
     </Screen>
   );
 }

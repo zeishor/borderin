@@ -1,5 +1,8 @@
 import { useState } from 'preact/hooks';
-import { deleteMasina, newId, saveMasina, saveSetari, useStore } from '../store';
+import { saveSetari, useStore } from '../store';
+import { CursManager } from './CursManager';
+import { PreturiManager } from './PreturiManager';
+import { MasiniManager } from './MasiniManager';
 import { Field, Screen } from '../ui';
 import { salveazaTema, TEME, temaAleasa, type Tema } from '../tema';
 import { NAVIGATII, navigatieAleasa, salveazaNavigatie, type Navigatie } from '../nav';
@@ -8,17 +11,12 @@ import { salveazaTracker, TRACKERE, trackerAles, type Tracker } from '../zbor';
 
 export function SetariScreen() {
   const { masini, setari } = useStore();
-  const [nume, setNume] = useState('');
-  const [locuri, setLocuri] = useState(4);
+  const [masiniDeschis, setMasiniDeschis] = useState(false);
+  const [cursDeschis, setCursDeschis] = useState(false);
+  const [preturiDeschis, setPreturiDeschis] = useState(false);
   const [tema, setTema] = useState<Tema>(temaAleasa());
   const [nav, setNav] = useState<Navigatie>(navigatieAleasa());
   const [tracker, setTracker] = useState<Tracker>(trackerAles());
-
-  async function adauga() {
-    if (!nume.trim()) return;
-    await saveMasina({ id: newId(), nume: nume.trim(), locuri });
-    setNume('');
-  }
 
   const [mesajBackup, setMesajBackup] = useState('');
 
@@ -49,22 +47,25 @@ export function SetariScreen() {
   return (
     <Screen title="Setări" tabs>
       <h2 class="day">Mașini</h2>
-      {masini.length === 0 && <p class="muted">Nicio mașină adăugată.</p>}
-      {masini.map((m) => (
-        <div class="row" key={m.id}>
-          <span class="grow">
-            {m.nume} · {m.locuri} locuri
-          </span>
-          <button class="icon" aria-label={`Șterge ${m.nume}`} onClick={() => deleteMasina(m.id)}>
-            ✕
-          </button>
-        </div>
-      ))}
       <div class="row">
-        <input placeholder="Nume / număr înmatriculare" value={nume} onInput={(e) => setNume(e.currentTarget.value)} />
-        <input class="narrow" type="number" min={1} value={locuri} onInput={(e) => setLocuri(Number(e.currentTarget.value) || 1)} />
-        <button onClick={adauga}>Adaugă</button>
+        <span class="grow muted">
+          {masini.length === 0 ? 'Nicio mașină adăugată.' : `${masini.length} ${masini.length === 1 ? 'mașină' : 'mașini'}`}
+        </span>
+        <button onClick={() => setMasiniDeschis(true)}>🚐 Manager mașini</button>
       </div>
+      {masiniDeschis && <MasiniManager onClose={() => setMasiniDeschis(false)} />}
+
+      <h2 class="day">Bani</h2>
+      <div class="row">
+        <button class="grow" onClick={() => setPreturiDeschis(true)}>
+          💰 Prețuri și salariu
+        </button>
+        <button class="grow" onClick={() => setCursDeschis(true)}>
+          💱 Curs valutar
+        </button>
+      </div>
+      {preturiDeschis && <PreturiManager onClose={() => setPreturiDeschis(false)} />}
+      {cursDeschis && <CursManager onClose={() => setCursDeschis(false)} />}
 
       <h2 class="day">Backup date</h2>
       <p class="muted">Datele stau doar în telefon. Descarcă din când în când un backup și păstrează-l în altă parte.</p>
@@ -132,27 +133,6 @@ export function SetariScreen() {
       </Field>
       <p class="muted">Se deschide ca link; dacă aplicația e instalată, telefonul o poate deschide direct pe ea.</p>
 
-      <h2 class="day">Spălătorie (decont)</h2>
-      <Field label="Spălare mașină mică, până la 4 locuri (RON)">
-        <input
-          type="number"
-          min={0}
-          step={1}
-          value={setari.spalatorieMicaRon}
-          onInput={(e) => saveSetari({ ...setari, spalatorieMicaRon: Number(e.currentTarget.value) || 0 })}
-        />
-      </Field>
-      <Field label="Spălare mașină mare, peste 4 locuri (RON)">
-        <input
-          type="number"
-          min={0}
-          step={1}
-          value={setari.spalatorieMareRon}
-          onInput={(e) => saveSetari({ ...setari, spalatorieMareRon: Number(e.currentTarget.value) || 0 })}
-        />
-      </Field>
-      <p class="muted">Suma fixă care se decontează la fiecare spălare. Mașina cursei hotărăște ce sumă se aplică.</p>
-
       <h2 class="day">Cursă „extra”</h2>
       <Field label="Prag (ore, durata totală a cursei)">
         <input
@@ -173,6 +153,15 @@ export function SetariScreen() {
         />
       </Field>
       <p class="muted">Calculul „extra” se adaugă într-o etapă următoare; setările se păstrează de pe acum.</p>
+
+      <h2 class="day">Despre</h2>
+      <p class="muted">
+        Baza de localități: © GeoNames (geonames.org), licență{' '}
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">
+          CC BY 4.0
+        </a>
+        .
+      </p>
     </Screen>
   );
 }

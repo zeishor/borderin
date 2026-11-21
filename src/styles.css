@@ -262,3 +262,31 @@ h1.ascuns { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-
 }
 .stop.prima .stop-dot, .stop.ultima .stop-dot { background: var(--surface); box-shadow: 0 0 0 3px var(--brand); border-color: var(--accent); }
 .stop-nume { font-size: .72rem; font-weight: 600; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Fereastră (dialog) */
+dialog.modal {
+  width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 48px); padding: 0;
+  border: 0; border-radius: 18px; background: var(--surface); color: var(--text);
+  box-shadow: 0 20px 60px rgb(0 0 0 / .35);
+}
+dialog.modal::backdrop { background: rgb(0 0 0 / .5); }
+.modal-corp { display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+.modal-cap { display: flex; align-items: center; justify-content: space-between; }
+.modal-cap h2 { margin: 0; font-size: 1.15rem; }
+.modal-sub { margin: 14px 0 0; font-size: .95rem; color: var(--muted); }
+.curs-eticheta { flex: none; min-width: 64px; }
+.curs-eticheta:last-child { min-width: 0; }
+
+/* Căutare localități și chip-uri cu acțiuni */
+.cauta { position: relative; flex: 1; }
+.cauta-lista {
+  display: flex; flex-direction: column; margin-top: 4px;
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface);
+}
+.cauta-lista button { border: 0; border-radius: 0; text-align: left; border-bottom: 1px solid var(--line); }
+.cauta-lista button:last-child { border-bottom: 0; }
+.mama { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.chip.adauga { border: 1px dashed var(--line); background: transparent; min-height: 0; cursor: pointer; }
+.chip-x { border: 0; background: transparent; padding: 0 0 0 4px; min-height: 0; color: var(--muted); }
+.total.sold-primit { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
+.total.sold-predat { background: var(--warn-soft); color: var(--warn); font-weight: 700; }

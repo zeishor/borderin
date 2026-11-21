@@ -92,3 +92,17 @@ Mesajele reale conțin nume și telefoane. Exemplele pentru teste se pun în `sa
 ## Decont
 
 Ecranul „Decont" (💼 din lista de curse): șoferul alege când merge la firmă. Un decont înregistrează banii predați (EUR/RON, parțial sau tot) și biletele decontate (toate odată sau alese). Soldul „de predat" = încasat − predat, pe monede; biletele decontate dispar din „nedecontate". Un decont se poate anula, iar soldurile revin. Conversia dintre monede (bilete în HUF, bani în EUR/RON) nu se face în aplicație.
+
+## Prețuri, curs valutar și decontul net
+
+Firma plătește doar în lei. În Setări → „Prețuri și salariu" șoferul pune salariul de bază (nu se decontează), sumele de spălătorie (mașină mică/mare) și localitățile mamă cu suma pe cursă, plus limitrofele lor. Cursa ia suma celei mai scumpe opriri; la o oprire fără preț apare un popup care întreabă localitatea mamă (se întreabă o singură dată). În Setări → „Curs valutar" se scriu cursurile (1 EUR = x lei etc.). Decontul e net, în lei: ce ai de luat (curse, spălătorie, bilete la curs) minus valuta predată la curs → „de primit" sau „de predat". Rezumatul lunii din ecranul Decont adună salariul de bază și cursele din lună.
+
+### Baza de localități
+
+`public/localitati.json` (căutare fără diacritice și „cea mai apropiată mamă") se generează din GeoNames (CC BY 4.0, https://download.geonames.org/export/dump/):
+
+```
+node scripts/build-localitati.mjs RO.txt admin1CodesASCII.txt HU.txt
+```
+
+Fără fișier, aplicația merge, dar căutarea cade pe text liber.

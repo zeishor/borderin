@@ -9,6 +9,8 @@ import { Field, Screen } from '../ui';
 import { linkZbor } from '../zbor';
 import { NavButoane } from '../navbuton';
 import { traseu } from '../traseu';
+import { useCerePret } from '../cerepret';
+import { aplicaPret, opririCursa, SURSA_MANUALA } from '../preturi';
 import { pretSpalare, spalariDecontate } from '../spalatorie';
 import type { Rezervare } from '../types';
 
@@ -64,6 +66,7 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
 export function CursaScreen({ id }: { id: string }) {
   const { curse, rezervari, masini, bilete, setari, deconturi } = useStore();
   const [adauga, setAdauga] = useState('');
+  const { element, calculeaza } = useCerePret();
   const cursa = curse.find((c) => c.id === id);
   if (!cursa) return <Screen title="Cursă" backTo="/"><p class="empty">Cursa nu există.</p></Screen>;
 
@@ -78,10 +81,20 @@ export function CursaScreen({ id }: { id: string }) {
   const pret = pretSpalare(masina, setari);
   const decontate = spalariDecontate(id, deconturi);
 
+  async function recalculeaza() {
+    await saveCursa(aplicaPret(cursa!, await calculeaza(opririCursa(cursa!, ale))));
+  }
+
   async function adaugaMesaje() {
     const rezultat = parseMesaje(adauga);
-    for (const e of rezultat.rezervari) await saveRezervare(rezervareDinExtras(id, e));
-    await saveCursa(aplicaPeCursa(cursa!, rezultat));
+    const noi = rezultat.rezervari.map((e) => rezervareDinExtras(id, e));
+    for (const r of noi) await saveRezervare(r);
+    let actualizata = aplicaPeCursa(cursa!, rezultat);
+    // Opriri noi pot schimba suma, dar o sumă scrisă manual nu se atinge.
+    if (actualizata.sumaSursa !== SURSA_MANUALA) {
+      actualizata = aplicaPret(actualizata, await calculeaza(opririCursa(actualizata, [...ale, ...noi])));
+    }
+    await saveCursa(actualizata);
     setAdauga('');
   }
 
@@ -107,6 +120,25 @@ export function CursaScreen({ id }: { id: string }) {
     <Screen title={titluCursa(cursa)} backTo="/">
       <p class="muted">{fmtData(cursa.data)}</p>
       <p class="muted">{traseu(cursa, ale).join(' → ')}</p>
+
+      <div class="grid">
+        <Field label="Suma pentru șofer (lei)">
+          <input
+            type="number"
+            min={0}
+            value={cursa.sumaSofer ?? ''}
+            onInput={(e) => {
+              const v = Number(e.currentTarget.value);
+              set(v > 0 ? { sumaSofer: v, sumaSursa: SURSA_MANUALA } : { sumaSofer: undefined, sumaSursa: SURSA_MANUALA });
+            }}
+          />
+        </Field>
+        <button onClick={recalculeaza}>Recalculează din prețuri</button>
+      </div>
+      <p class="muted">
+        {cursa.sumaSursa === SURSA_MANUALA ? 'Introdusă manual.' : (cursa.sumaSursa ?? 'Nicio sumă încă.')}
+      </p>
+      {element}
 
       <div class="grid">
         <Field label="Destinația">

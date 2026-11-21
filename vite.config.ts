@@ -10,8 +10,13 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         // Fișierele OCR sunt mari: se descarcă la prima scanare, nu la instalare.
-        globIgnores: ['tesseract/**'],
+        globIgnores: ['tesseract/**', 'localitati.json'],
         runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.endsWith('/localitati.json'),
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'localitati', expiration: { maxEntries: 2 } },
+          },
           {
             urlPattern: ({ url }) => url.pathname.includes('/tesseract/'),
             handler: 'CacheFirst',

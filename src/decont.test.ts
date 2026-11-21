@@ -52,6 +52,7 @@ describe('decont', () => {
   });
   it('venitul lunii: salariu + cursele din lună', () => {
     const curse = [cursa('a', '2026-11-01', 300), cursa('b', '2026-11-20', 200), cursa('c', '2026-12-01', 999), cursa('d', '2026-11-05')];
-    expect(venitLuna(curse, 4000, '2026-11')).toEqual({ salariu: 4000, curse: 500, nr: 2, total: 4500 });
+    expect(venitLuna(curse, 4000, '2026-11')).toEqual({ salariu: 4000, curse: 500, nr: 2, total: 4500, incluse: 0 });
+    expect(venitLuna(curse, 4000, '2026-11', new Set(['b']))).toEqual({ salariu: 4000, curse: 300, nr: 1, total: 4300, incluse: 1 });
   });
 });

@@ -15,6 +15,7 @@ import { pretSpalare, spalariDecontate } from '../spalatorie';
 import { analizaCursa, soldCurse } from '../decontcursa';
 import { textSold } from './DecontScreen';
 import { inRon } from '../curs';
+import { statusLocala } from '../locale';
 import type { Rezervare } from '../types';
 
 function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
@@ -86,7 +87,8 @@ export function CursaScreen({ id }: { id: string }) {
   const spalari = cursa.spalari ?? 0;
   const pret = pretSpalare(masina, setari);
   const decontate = spalariDecontate(id, deconturi);
-  const analiza = analizaCursa(cursa, { rezervari, bilete, deconturi, masini, setari });
+  const analiza = analizaCursa(cursa, { rezervari, bilete, deconturi, masini, setari, curse });
+  const locala = statusLocala(curse, cursa, setari.curseLocaleInclusePeLuna);
   const rezultat = soldCurse([analiza], setari.cursuri);
   const fmtLei = (x: number) => `${Math.round(x * 100) / 100} lei`;
 
@@ -208,11 +210,13 @@ export function CursaScreen({ id }: { id: string }) {
       <div class="decont-cursa">
         <span class="linie">
           💼 Cursă:{' '}
-          {analiza.sumaCursa > 0
-            ? fmtLei(analiza.sumaCursa)
-            : (cursa.sumaSofer ?? 0) > 0
-              ? `${fmtLei(cursa.sumaSofer ?? 0)} (decontată)`
-              : 'fără sumă încă'}
+          {analiza.inclusaInSalariu
+            ? `${fmtLei(cursa.sumaSofer ?? 0)} · inclusă în salariu`
+            : analiza.sumaCursa > 0
+              ? fmtLei(analiza.sumaCursa)
+              : (cursa.sumaSofer ?? 0) > 0
+                ? `${fmtLei(cursa.sumaSofer ?? 0)} (decontată)`
+                : 'fără sumă încă'}
         </span>
         <span class="linie">
           🅿️ Bilet parcare:{' '}
@@ -240,6 +244,24 @@ export function CursaScreen({ id }: { id: string }) {
         )}
         {analiza.decontata && <span class="linie ok">✓ Decontată</span>}
       </div>
+      <label class="row">
+        <input
+          type="checkbox"
+          style="width:auto;min-height:0"
+          checked={!!cursa.locala}
+          onChange={(e) => set({ locala: e.currentTarget.checked || undefined })}
+        />
+        <span>Cursă locală (poate fi inclusă în salariu)</span>
+      </label>
+      {locala && (
+        <p class="muted">
+          {locala.inclusa
+            ? `📍 A ${locala.rang}-a cursă locală din lună, din ${setari.curseLocaleInclusePeLuna} incluse în salariu: nu se decontează (banii încasați se predau ca de obicei).`
+            : setari.curseLocaleInclusePeLuna > 0
+              ? `📍 A ${locala.rang}-a cursă locală din lună; doar primele ${setari.curseLocaleInclusePeLuna} sunt incluse în salariu, deci aceasta se decontează.`
+              : '📍 Nicio cursă locală inclusă în salariu: setează numărul în Setări → Prețuri și salariu.'}
+        </p>
+      )}
       {aleBilete.length === 0 && (
         <label class="row">
           <input

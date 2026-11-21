@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { stari } from './stare';
 import type { Cursa, Setari } from './types';
 
-const setari: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5, spalatorieMicaRon: 0, spalatorieMareRon: 0, cursuri: {}, salariuBazaRon: 0 };
+const setari: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5, spalatorieMicaRon: 0, spalatorieMareRon: 0, cursuri: {}, salariuBazaRon: 0, curseLocaleInclusePeLuna: 0 };
 const c = (id: string, data: string, plecare?: string, retur?: string) => ({ id, data, plecare, retur }) as Cursa;
 const la = (data: string, hhmm: string) => new Date(`${data}T${hhmm}:00`).getTime();
 

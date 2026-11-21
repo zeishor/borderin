@@ -13,7 +13,7 @@ interface State {
 }
 
 const SETARI_ID = 'setari';
-const SETARI_IMPLICITE: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5, spalatorieMicaRon: 0, spalatorieMareRon: 0, cursuri: {}, salariuBazaRon: 0 };
+const SETARI_IMPLICITE: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5, spalatorieMicaRon: 0, spalatorieMareRon: 0, cursuri: {}, salariuBazaRon: 0, curseLocaleInclusePeLuna: 0 };
 
 let state: State = { curse: [], rezervari: [], masini: [], setari: SETARI_IMPLICITE, bilete: [], deconturi: [], localitati: [] };
 const listeners = new Set<() => void>();
@@ -53,6 +53,7 @@ export async function initStore(): Promise<void> {
           spalatorieMareRon: salvate.spalatorieMareRon ?? 0,
           cursuri: salvate.cursuri ?? {},
           salariuBazaRon: salvate.salariuBazaRon ?? 0,
+          curseLocaleInclusePeLuna: salvate.curseLocaleInclusePeLuna ?? 0,
         }
       : SETARI_IMPLICITE,
   });

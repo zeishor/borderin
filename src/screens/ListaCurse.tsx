@@ -48,14 +48,16 @@ export function ListaCurse() {
             const ale = rezervari.filter((r) => r.cursaId === c.id);
             const masina = masini.find((m) => m.id === c.masinaId);
             const st = stare.get(c.id) ?? 'viitoare';
-            const an = analizaCursa(c, { rezervari: ale, bilete, deconturi, masini, setari });
+            const an = analizaCursa(c, { rezervari: ale, bilete, deconturi, masini, setari, curse });
             const sold = soldCurse([an], setari.cursuri);
             const arePrimit = an.incasat.EUR + an.incasat.RON + an.incasat.GBP + an.incasat.CHF > 0;
-            const textDecont = sold.lipsa.length || !arePrimit
-              ? `De decontat · ${Math.round(sold.deLuat)} lei`
-              : sold.sold >= 0
-                ? `De decontat · primești ${Math.round(sold.sold)} lei`
-                : `De decontat · predai ${Math.round(-sold.sold)} lei`;
+            // „Predai X lei" nu se arată pe card: doar de decontat și, când firma îți datorează, cât primești.
+            const textDecont =
+              sold.lipsa.length || !arePrimit
+                ? `De decontat · ${Math.round(sold.deLuat)} lei`
+                : sold.sold > 0
+                  ? `De decontat · primești ${Math.round(sold.sold)} lei`
+                  : 'De decontat';
             return (
               <button key={c.id} class={`card trip st-${st}${an.decontata ? ' decontata' : ''}${an.deDecontat ? ' de-decontat' : ''}`} onClick={() => go(`/cursa/${c.id}`)}>
                 <span class="trip-cap">
@@ -78,6 +80,7 @@ export function ListaCurse() {
                   <span class="chip">💰 {c.sumaSofer !== undefined ? `${c.sumaSofer} lei` : '?'}</span>
                   {an.deDecontat && st !== 'viitoare' && st !== 'urmatoarea' && <span class="chip decont-da">💼 {textDecont}</span>}
                   {an.decontata && <span class="chip decont-ok">💼 Decontată ✓</span>}
+                  {c.locala && <span class="chip">📍 {an.inclusaInSalariu ? 'locală, în salariu' : 'locală'}</span>}
                   {st !== 'viitoare' && st !== 'urmatoarea' && (
                     <span class={(c.spalari ?? 0) > 0 ? 'chip spal-da' : 'chip spal-nu'}>
                       🧽 {(c.spalari ?? 0) > 0 ? `✓ ×${c.spalari}` : '✗'}

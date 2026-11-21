@@ -95,8 +95,15 @@ export function monedeNecesareCurs(predat: Totaluri, bilete: Bilet[]): (Moneda |
 }
 
 /** Ce ai luat într-o lună: salariul de bază plus suma curselor din acea lună (după data cursei). `luna` = „AAAA-LL". */
-export function venitLuna(curse: Cursa[], salariuBaza: number, luna: string): { salariu: number; curse: number; nr: number; total: number } {
-  const dinLuna = curse.filter((c) => c.data.startsWith(luna) && (c.sumaSofer ?? 0) > 0);
+export function venitLuna(
+  curse: Cursa[],
+  salariuBaza: number,
+  luna: string,
+  incluse: Set<string> = new Set(),
+): { salariu: number; curse: number; nr: number; total: number; incluse: number } {
+  // Cursele locale incluse în salariu nu se adaugă a doua oară.
+  const dinLuna = curse.filter((c) => c.data.startsWith(luna) && (c.sumaSofer ?? 0) > 0 && !incluse.has(c.id));
+  const nrIncluse = curse.filter((c) => c.data.startsWith(luna) && incluse.has(c.id)).length;
   const sumaCurse = dinLuna.reduce((t, c) => t + (c.sumaSofer ?? 0), 0);
-  return { salariu: salariuBaza, curse: sumaCurse, nr: dinLuna.length, total: rotunjeste(salariuBaza + sumaCurse) };
+  return { salariu: salariuBaza, curse: sumaCurse, nr: dinLuna.length, total: rotunjeste(salariuBaza + sumaCurse), incluse: nrIncluse };
 }

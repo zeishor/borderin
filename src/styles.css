@@ -303,3 +303,9 @@ dialog.modal::backdrop { background: rgb(0 0 0 / .5); }
 .linie.ok { color: var(--ok); font-weight: 700; }
 .decont-cursa { padding: 4px 0 8px; }
 .cursa-decont { align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--line); }
+
+.total.mare { font-size: 1.15rem; padding: 16px; }
+.calcul { margin: 10px 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.calcul p { margin: 6px 0; }
+.calcul ul { margin: 2px 0 6px; padding-left: 20px; color: var(--muted); }
+.calcul-titlu { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }

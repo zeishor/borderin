@@ -46,6 +46,8 @@ export interface PretCalculat {
   /** De unde vine suma, sau ce lipsește. */
   sursa?: string;
   necunoscute: string[];
+  /** Mama opririi celei mai scumpe e marcată locală. */
+  locala?: boolean;
 }
 
 /** Suma cursei = cea mai mare sumă dintre opriri. Dacă vreo oprire nu are preț, nu se alege nicio sumă. */
@@ -61,10 +63,10 @@ export function calculeazaSuma(opriri: string[], localitati: Localitate[]): Pret
   if (!cel) return { suma: 0, sursa: 'Timișoara (km 0)', necunoscute: [] };
   const cale = norm(cel.oprire) === norm(cel.mama.nume) ? cel.oprire : `${cel.oprire} → ${cel.mama.nume}`;
   const multe = opriri.length > 1 ? ` (cea mai scumpă din ${opriri.join(' + ')})` : '';
-  return { suma: cel.mama.sumaRon, sursa: cale + multe, necunoscute: [] };
+  return { suma: cel.mama.sumaRon, sursa: cale + multe, necunoscute: [], locala: cel.mama.locala || undefined };
 }
 
 /** Pune suma calculată pe cursă (sau scoate suma veche dacă acum lipsește un preț). */
 export function aplicaPret(cursa: Cursa, calc: PretCalculat): Cursa {
-  return { ...cursa, sumaSofer: calc.suma, sumaSursa: calc.sursa };
+  return { ...cursa, sumaSofer: calc.suma, sumaSursa: calc.sursa, locala: calc.locala ?? cursa.locala };
 }

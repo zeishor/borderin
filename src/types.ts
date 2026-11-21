@@ -81,6 +81,8 @@ export interface Cursa {
   sumaSursa?: string;
   /** Marcat de șofer: cursa nu are bilet de parcare (de ex. la departures). Doar informativ, nu blochează decontul. */
   faraBilet?: boolean;
+  /** Cursă locală: din localitate marcată locală sau bifată de șofer. */
+  locala?: boolean;
 }
 
 /** Monedele cu curs de schimb față de leu (RON are cursul 1). */
@@ -96,6 +98,8 @@ export interface Localitate {
   nume: string;
   mamaId?: string;
   sumaRon?: number;
+  /** Mamă „locală" (ex. Arad): cursele ei pot fi incluse în salariu, în limita setată pe lună. */
+  locala?: boolean;
 }
 
 export interface Setari {
@@ -111,6 +115,8 @@ export interface Setari {
   cursuri: Cursuri;
   /** Salariul de bază lunar, în lei. Nu se decontează, doar se afișează în rezumatul lunii. */
   salariuBazaRon: number;
+  /** Câte curse locale pe lună sunt incluse în salariu și nu se decontează (primele din lună, după dată). */
+  curseLocaleInclusePeLuna: number;
 }
 
 export type MonedaBilet = 'HUF' | 'EUR' | 'RON';

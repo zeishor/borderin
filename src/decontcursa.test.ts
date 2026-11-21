@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { analizaCursa, soldCurse } from './decontcursa';
 import type { Bilet, Cursa, Decont, Masina, Rezervare, Setari } from './types';
 
-const setari = { spalatorieMicaRon: 30, spalatorieMareRon: 50, cursuri: { EUR: 5.5 } } as unknown as Setari;
+const setari = { spalatorieMicaRon: 30, spalatorieMareRon: 50, cursuri: { EUR: 5.5 }, curseLocaleInclusePeLuna: 0 } as unknown as Setari;
 const masini = [{ id: 'm', nume: 'Mica', locuri: 4 } as Masina];
 const cursa = { id: 'c', data: '2026-11-14', masinaId: 'm', sumaSofer: 300, spalari: 1 } as Cursa;
 const bilet = (id: string) => ({ id, cursaId: 'c', suma: 40, moneda: 'EUR' }) as Bilet;
@@ -44,5 +44,34 @@ describe('decont pe cursă', () => {
     const a = analizaCursa({ id: 'x', data: '2026-11-14' } as Cursa, ctx([], []));
     expect(a.deDecontat).toBe(false);
     expect(a.decontata).toBe(false);
+  });
+  it('cursă fără sumă, dar cu bani încasați: apare la decont', () => {
+    const a = analizaCursa({ id: 'c', data: '2026-11-14' } as Cursa, ctx([], []));
+    expect(a.sumaCursa).toBe(0);
+    expect(a.deDecontat).toBe(true);
+    expect(soldCurse([a], setari.cursuri)).toMatchObject({ deLuat: 0, predat: 440, sold: -440 });
+  });
+  it('după decont cu suma 0, banii nu se mai cer; dacă setezi suma după, doar suma apare', () => {
+    const d = { id: 'd', curse: [{ cursaId: 'c', suma: 0 }], bilete: [] } as unknown as Decont;
+    const fara = analizaCursa({ id: 'c', data: '2026-11-14' } as Cursa, ctx([d], []));
+    expect(fara.deDecontat).toBe(false);
+    expect(fara.decontata).toBe(true);
+    const cu = analizaCursa({ id: 'c', data: '2026-11-14', sumaSofer: 200 } as Cursa, ctx([d], []));
+    expect(cu.sumaCursa).toBe(200);
+    expect(cu.incasat).toMatchObject({ EUR: 0, RON: 0 });
+    expect(cu.incasatTotal).toMatchObject({ EUR: 40, RON: 220 });
+    expect(soldCurse([cu], setari.cursuri)).toMatchObject({ deLuat: 200, predat: 0, sold: 200 });
+  });
+  it('o parte din sumă deja decontată: rămâne diferența', () => {
+    const d = { id: 'd', curse: [{ cursaId: 'c', suma: 100 }], bilete: [] } as unknown as Decont;
+    expect(analizaCursa({ ...cursa, sumaSofer: 250, spalari: 0 }, ctx([d], [])).sumaCursa).toBe(150);
+  });
+  it('cursă locală inclusă în salariu: fără sumă la decont, dar banii încasați rămân', () => {
+    const local = { ...cursa, locala: true, creat: 0 } as Cursa;
+    const s = { ...setari, curseLocaleInclusePeLuna: 1 } as Setari;
+    const a = analizaCursa(local, { ...ctx([], []), setari: s, curse: [local] });
+    expect(a.inclusaInSalariu).toBe(true);
+    expect(a.sumaCursa).toBe(0);
+    expect(a.deDecontat).toBe(true); // mai are de predat banii încasați
   });
 });

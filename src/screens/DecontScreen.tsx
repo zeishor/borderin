@@ -7,6 +7,7 @@ import { deleteDecont, newId, saveDecont, useStore } from '../store';
 import { Field, Screen } from '../ui';
 import { MONEDE, zero } from '../monede';
 import { stari } from '../stare';
+import { incluseInSalariu } from '../locale';
 import type { Bilet, Cursuri, Moneda, MonedaBilet, MonedaCurs } from '../types';
 
 const lei = (x: number) => fmtSuma(x, 'RON');
@@ -51,6 +52,10 @@ function RandCursa(props: {
         <strong>{props.titlu}</strong>
         <br />
         {a.sumaCursa > 0 && <span class="linie">Cursă {lei(a.sumaCursa)}</span>}
+        {a.inclusaInSalariu && <span class="linie">📍 Cursă locală: inclusă în salariu, nu se decontează</span>}
+        {!a.inclusaInSalariu && a.sumaCursa === 0 && (a.cursa.sumaSofer ?? 0) === 0 && (
+          <span class="linie">💼 Cursă: fără sumă încă (o poți seta oricând în ecranul cursei)</span>
+        )}
         {a.bilete.map((b) => (
           <span class="linie" key={b.id}>
             🅿️ {textBiletLei(b, cursuri)}
@@ -81,7 +86,7 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
   const [luna, setLuna] = useState(azi().slice(0, 7));
 
   const rest = restDePredat(rezervari, deconturi);
-  const ctx = { rezervari, bilete, deconturi, masini, setari };
+  const ctx = { rezervari, bilete, deconturi, masini, setari, curse };
   const stare = stari(curse, setari, Date.now());
 
   // Cursele cu ceva de decontat, cele mai noi primele.
@@ -122,7 +127,8 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
     const cursuriFolosite: Cursuri = {};
     for (const m of necesare) cursuriFolosite[m] = cursPentru(m, cursuri);
     const spal = alese.filter((a) => a.spalari.nr > 0);
-    const curseDec = alese.filter((a) => a.sumaCursa > 0);
+    // Toate cursele alese intră în decont, și cele fără sumă (suma 0): așa banii încasați la ele nu se mai cer a doua oară.
+    const curseDec = alese;
     await saveDecont({
       id: newId(),
       creat: Date.now(),
@@ -131,7 +137,7 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
       pastrat: MONEDE.some((m) => pastratNr[m] > 0) ? pastratNr : undefined,
       bilete: bileteAlese.map((b) => b.id),
       spalatorii: spal.length ? spal.map((a) => ({ cursaId: a.cursa.id, nr: a.spalari.nr, suma: a.spalari.suma })) : undefined,
-      curse: curseDec.length ? curseDec.map((a) => ({ cursaId: a.cursa.id, suma: a.sumaCursa })) : undefined,
+      curse: curseDec.map((a) => ({ cursaId: a.cursa.id, suma: a.sumaCursa })),
       cursuri: necesare.length ? cursuriFolosite : undefined,
       soldRon: sold.sold,
       note: note.trim() || undefined,
@@ -151,13 +157,13 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
     return c ? `${titluCursa(c)} · ${fmtData(c.data)}` : 'cursă ștearsă';
   };
   const istoric = [...deconturi].sort((a, b) => b.creat - a.creat);
-  const venit = venitLuna(curse, setari.salariuBazaRon, luna);
+  const venit = venitLuna(curse, setari.salariuBazaRon, luna, incluseInSalariu(curse, setari.curseLocaleInclusePeLuna));
   const deLuatTotal = analize.reduce((t, a) => t + soldCurse([a], setari.cursuri).deLuat, 0);
 
   return (
     <Screen title="Decont" tabs backTo={preselect ? `/cursa/${preselect}` : undefined}>
       <div class="total">
-        <span>Curse de decontat ({analize.length})</span>
+        <span>Ți se cuvine pentru {analize.length} curse nedecontate</span>
         <strong>{lei(Math.round(deLuatTotal * 100) / 100)}</strong>
       </div>
       <div class="total">
@@ -187,6 +193,9 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
         <span>Total luna aceasta</span>
         <strong>{lei(venit.total)}</strong>
       </div>
+      {venit.incluse > 0 && (
+        <p class="muted">{venit.incluse} curse locale sunt incluse în salariu și nu se adaugă.</p>
+      )}
       <p class="muted">Cursele se numără după data lor, decontate sau nu. Salariul de bază nu se decontează.</p>
 
       <h2 class="day">Decont nou</h2>
@@ -234,14 +243,34 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
       {alese.length > 0 && (
         <>
           <h2 class="day">Rezultat</h2>
-          <div class="total">
-            <span>De luat de la firmă</span>
-            <strong>{lei(sold.deLuat)}</strong>
+          <div class={sold.sold >= 0 ? 'total sold-primit mare' : 'total sold-predat mare'}>
+            <span>{sold.lipsa.length ? 'Rezultat necalculat (lipsește un curs)' : textSold(sold.sold)}</span>
           </div>
-          <div class="total">
-            <span>Încasat la cursele alese</span>
-            <strong>{textBani(incasatAlese)}</strong>
+          {sold.lipsa.length > 0 && (
+            <p class="muted">Lipsește cursul pentru {sold.lipsa.join(', ')}. Completează-l mai sus sau în Setări → Curs valutar.</p>
+          )}
+
+          <div class="calcul">
+            <p class="calcul-titlu">Cum s-a calculat</p>
+            <p>
+              <strong>1. Ți se cuvine de la firmă: {lei(sold.deLuat)}</strong>
+            </p>
+            <ul>
+              {sumaCurse > 0 && <li>Curse ({alese.filter((a) => a.sumaCursa > 0).length}): {lei(sumaCurse)}</li>}
+              {bileteAlese.length > 0 && <li>Parcare ({bileteAlese.length} bilete): {lei(Math.round((sold.deLuat - sumaCurse - sumaSpal) * 100) / 100)}</li>}
+              {sumaSpal > 0 && <li>Spălătorie: {lei(sumaSpal)}</li>}
+            </ul>
+            <p>
+              <strong>2. Ai încasat tu de la clienți: {textBani(predat) === '—' ? 'nimic de predat' : textBani(predat)}</strong>
+              {sold.predat > 0 && textBani(predat) !== lei(sold.predat) ? ` (= ${lei(sold.predat)} la curs)` : ''}
+              <br />
+              <span class="muted">Banii ăștia îi predai firmei, deci se scad din ce ți se cuvine.</span>
+            </p>
+            <p>
+              <strong>3. Diferența: {lei(sold.deLuat)} − {lei(sold.predat)} = {lei(sold.sold)}</strong>
+            </p>
           </div>
+
           {vizibile.length > 0 && (
             <>
               <h3 class="modal-sub">Păstrez la mine (rest, alte cheltuieli)</h3>
@@ -260,16 +289,6 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
               </div>
               <p class="muted">Suma păstrată nu se predă acum: rămâne la tine și apare data viitoare la „Ai la tine".</p>
             </>
-          )}
-          <div class="total">
-            <span>Predai (valoare în lei)</span>
-            <strong>{textBani(predat)}{sold.predat > 0 ? ` = ${lei(sold.predat)}` : ''}</strong>
-          </div>
-          <div class={sold.sold >= 0 ? 'total sold-primit' : 'total sold-predat'}>
-            <span>{textSold(sold.sold)}</span>
-          </div>
-          {sold.lipsa.length > 0 && (
-            <p class="muted">Lipsește cursul pentru {sold.lipsa.join(', ')}. Completează-l mai sus sau în Setări → Curs valutar.</p>
           )}
         </>
       )}

@@ -55,6 +55,19 @@ export function PreturiManager({ onClose }: { onClose: () => void }) {
         />
       </Field>
       <p class="muted">Se adună cu cursele din lună în rezumatul din Decont, ca să știi cât ai luat în luna respectivă.</p>
+      <Field label="Curse locale incluse în salariu, pe lună (număr)">
+        <input
+          type="number"
+          min={0}
+          step={1}
+          value={setari.curseLocaleInclusePeLuna}
+          onInput={(e) => saveSetari({ ...setari, curseLocaleInclusePeLuna: Math.floor(numar(e.currentTarget.value)) })}
+        />
+      </Field>
+      <p class="muted">
+        Primele curse locale din fiecare lună (după dată) nu se decontează: sunt în salariu. Banii încasați la ele se predau
+        ca de obicei. Marchezi o localitate ca „locală" mai jos sau bifezi „Cursă locală" pe cursă.
+      </p>
 
       <h3 class="modal-sub">Spălătorie (decont)</h3>
       <Field label="Mașină mică, până la 4 locuri (lei)">
@@ -113,6 +126,17 @@ export function PreturiManager({ onClose }: { onClose: () => void }) {
               </button>
             )}
           </div>
+          {m.id !== TIMISOARA.id && (
+            <label class="row">
+              <input
+                type="checkbox"
+                style="width:auto;min-height:0"
+                checked={!!m.locala}
+                onChange={(e) => saveLocalitate({ ...m, locala: e.currentTarget.checked || undefined })}
+              />
+              <span>Locală (cursele ei intră în cele incluse în salariu)</span>
+            </label>
+          )}
           <div class="chips">
             {limitrofe(m.id).map((l) => (
               <span class="chip" key={l.id}>

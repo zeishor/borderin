@@ -3,7 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { useStore } from '../store';
 import { ETICHETE_STARE, interval, stari } from '../stare';
 import { analizaCursa } from '../decontcursa';
-import { arePlataIncasata, fmtData, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
+import { areDeIncasat, arePlataIncasata, fmtData, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Screen } from '../ui';
 import { traseu } from '../traseu';
 
@@ -63,25 +63,28 @@ export function ListaCurse() {
                     </span>
                   ))}
                 </span>
+                {/* Doar chip-uri cu informații: ce lipsește nu se afișează. */}
                 <span class="chips">
-                  <span class="chip">👥 {totalPasageri(ale)} pax</span>
-                  <span class="chip">📋 {ale.length} rezervări</span>
-                  <span class="chip">🚐 {masina ? masina.nume : 'fără mașină'}</span>
+                  {ale.length > 0 && <span class="chip">👥 {totalPasageri(ale)} pax</span>}
+                  {ale.length > 0 && <span class="chip">📋 {ale.length} rezervări</span>}
+                  {masina && <span class="chip">🚐 {masina.nume}</span>}
                   {c.plecare && <span class="chip">🕒 {c.plecare}</span>}
-                  <span class="chip">💰 {c.sumaSofer !== undefined ? `${c.sumaSofer} lei` : '?'}</span>
+                  {c.sumaSofer !== undefined && <span class="chip">💰 {c.sumaSofer} lei</span>}
                   {an.deDecontat && st !== 'viitoare' && st !== 'urmatoarea' && <span class="chip decont-da">💼 De decontat</span>}
                   {an.decontata && <span class="chip decont-ok">💼 Decontată ✓</span>}
                   {c.locala && <span class="chip">📍 {an.inclusaInSalariu ? 'locală, în salariu' : 'locală'}</span>}
-                  {st !== 'viitoare' && st !== 'urmatoarea' && (
-                    <span class={(c.spalari ?? 0) > 0 ? 'chip spal-da' : 'chip spal-nu'}>
-                      🧽 {(c.spalari ?? 0) > 0 ? `✓ ×${c.spalari}` : '✗'}
-                    </span>
-                  )}
+                  {(c.spalari ?? 0) > 0 && <span class="chip spal-da">🧽 ×{c.spalari}</span>}
                 </span>
-                <span class="chips">
-                  <span class="pill de-incasat">De încasat {textDeIncasat(ale)}</span>
-                  {arePlataIncasata(ale) && <span class="pill incasat">Încasat {textIncasat(ale)}</span>}
-                </span>
+                {ale.length > 0 && (
+                  <span class="chips">
+                    {areDeIncasat(ale) ? (
+                      <span class="pill de-incasat">De încasat {textDeIncasat(ale)}</span>
+                    ) : (
+                      <span class="pill achitat">Achitat</span>
+                    )}
+                    {arePlataIncasata(ale) && <span class="pill incasat">Încasat {textIncasat(ale)}</span>}
+                  </span>
+                )}
               </button>
             );
           })}

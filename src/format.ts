@@ -66,6 +66,8 @@ export function textBani(t: Totaluri): string {
 
 export const textDeIncasat = (rezervari: Rezervare[]) => textBani(deIncasat(rezervari));
 export const textIncasat = (rezervari: Rezervare[]) => textBani(incasat(rezervari));
+/** Mai e ceva de încasat la aceste rezervări (inclusiv restanțe)? */
+export const areDeIncasat = (rezervari: Rezervare[]) => MONEDE.some((m) => deIncasat(rezervari)[m] > 0);
 export const arePlataIncasata = (rezervari: Rezervare[]) => MONEDE.some((m) => incasat(rezervari)[m] > 0);
 
 export function titluCursa(c: Cursa): string {

@@ -153,6 +153,8 @@ h2.day.separator { margin-top: 28px; }
 .trip.st-viitoare { border-left-color: var(--warn); }
 .stare-eticheta.st-viitoare { background: var(--warn-soft); color: var(--warn); }
 .trip.st-terminata { border-left-color: var(--line); opacity: .65; }
+/* Terminată dar nedecontată: rămâne la vedere, ca să nu se piardă. */
+.trip.st-terminata.de-decontat { opacity: 1; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .chip {
   display: inline-flex; align-items: center; gap: 4px;
@@ -291,3 +293,13 @@ dialog.modal::backdrop { background: rgb(0 0 0 / .5); }
 .total.sold-primit { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
 .total.sold-predat { background: var(--warn-soft); color: var(--warn); font-weight: 700; }
 .icon-gol { width: 44px; text-align: center; flex: none; }
+.incaseaza.extra { background: var(--warn-soft); color: var(--warn); border: 2px solid var(--warn); font-weight: 700; }
+
+/* Decont pe cursă */
+.chip.decont-da { background: var(--warn-soft); color: var(--warn); font-weight: 700; }
+.chip.decont-ok { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
+.linie { display: block; margin-top: 2px; }
+.linie.rezumat { margin-top: 6px; font-weight: 700; }
+.linie.ok { color: var(--ok); font-weight: 700; }
+.decont-cursa { padding: 4px 0 8px; }
+.cursa-decont { align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--line); }

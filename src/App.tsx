@@ -15,6 +15,8 @@ export function App() {
 
   if (route === '/cursa-noua') return <CursaNoua />;
   if (route === '/decont') return <DecontScreen />;
+  const decontCursa = route.match(/^\/decont\/(.+)$/);
+  if (decontCursa) return <DecontScreen preselect={decontCursa[1]} />;
   if (route === '/setari') return <SetariScreen />;
   const cursa = route.match(/^\/cursa\/(.+)$/);
   if (cursa) return <CursaScreen id={cursa[1]} />;

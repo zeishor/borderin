@@ -2,12 +2,13 @@ import { go } from '../router';
 import { useEffect, useState } from 'preact/hooks';
 import { useStore } from '../store';
 import { ETICHETE_STARE, interval, stari } from '../stare';
+import { analizaCursa, soldCurse } from '../decontcursa';
 import { arePlataIncasata, fmtData, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Screen } from '../ui';
 import { traseu } from '../traseu';
 
 export function ListaCurse() {
-  const { curse, rezervari, masini, setari } = useStore();
+  const { curse, rezervari, masini, setari, bilete, deconturi } = useStore();
   const [acum, setAcum] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setAcum(Date.now()), 60_000);
@@ -47,8 +48,16 @@ export function ListaCurse() {
             const ale = rezervari.filter((r) => r.cursaId === c.id);
             const masina = masini.find((m) => m.id === c.masinaId);
             const st = stare.get(c.id) ?? 'viitoare';
+            const an = analizaCursa(c, { rezervari: ale, bilete, deconturi, masini, setari });
+            const sold = soldCurse([an], setari.cursuri);
+            const arePrimit = an.incasat.EUR + an.incasat.RON + an.incasat.GBP + an.incasat.CHF > 0;
+            const textDecont = sold.lipsa.length || !arePrimit
+              ? `De decontat · ${Math.round(sold.deLuat)} lei`
+              : sold.sold >= 0
+                ? `De decontat · primești ${Math.round(sold.sold)} lei`
+                : `De decontat · predai ${Math.round(-sold.sold)} lei`;
             return (
-              <button key={c.id} class={`card trip st-${st}`} onClick={() => go(`/cursa/${c.id}`)}>
+              <button key={c.id} class={`card trip st-${st}${an.decontata ? ' decontata' : ''}${an.deDecontat ? ' de-decontat' : ''}`} onClick={() => go(`/cursa/${c.id}`)}>
                 <span class="trip-cap">
                   <strong class="trip-titlu">{titluCursa(c)}</strong>
                   <span class={`stare-eticheta st-${st}`}>{ETICHETE_STARE[st]}</span>
@@ -67,6 +76,8 @@ export function ListaCurse() {
                   <span class="chip">🚐 {masina ? masina.nume : 'fără mașină'}</span>
                   {c.plecare && <span class="chip">🕒 {c.plecare}</span>}
                   <span class="chip">💰 {c.sumaSofer !== undefined ? `${c.sumaSofer} lei` : '?'}</span>
+                  {an.deDecontat && st !== 'viitoare' && st !== 'urmatoarea' && <span class="chip decont-da">💼 {textDecont}</span>}
+                  {an.decontata && <span class="chip decont-ok">💼 Decontată ✓</span>}
                   {st !== 'viitoare' && st !== 'urmatoarea' && (
                     <span class={(c.spalari ?? 0) > 0 ? 'chip spal-da' : 'chip spal-nu'}>
                       🧽 {(c.spalari ?? 0) > 0 ? `✓ ×${c.spalari}` : '✗'}

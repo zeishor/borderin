@@ -1,6 +1,6 @@
 import { CUVINTE_MONEDA, monedaDinCuvant } from './monede';
 import { waDigits } from './phone';
-import type { Directie, Moneda, Plata, Telefon } from './types';
+import type { Directie, ExtraPlata, Moneda, Plata, Telefon } from './types';
 
 export interface RezervareExtrasa {
   nume: string;
@@ -136,8 +136,68 @@ export function sumeDinText(text: string): { suma: number; moneda: Moneda }[] {
   }));
 }
 
+/** Cuvinte care preced o sumă extra: „încă 50 euro", „pe lângă", „în plus", „restanți 50 euro". */
+const SEMN_INAINTE = /restan[^\s,;.)]*|[iî]n\s+plus|pe\s+l[aâ]ng[aă]|suplimentar[^\s,;.)]*|diferen[^\s,;.)]*|datorat[^\s,;.)]*|\bplus\b|(?<![^\s,;(+])[iî]nc[aă](?![^\s,;.)])|mai\s+(?:are|ai)\s+de\s+[iî]ncasat/gi;
+/** Cuvinte care urmează imediat o sumă extra: „50 euro restanți". */
+const SEMN_DUPA = /^\s*(?:de\s+)?(?:restan[^\s,;.)]*|[iî]n\s+plus|suplimentar[^\s,;.)]*|datorat[^\s,;.)]*)/i;
+
+/**
+ * Desparte sumele extra (restanțe, „încă 50 euro") de prețul obișnuit. „40 euro / 220 lei" rămâne preț în două monede;
+ * „40 euro + încă 50 euro restanți" are prețul 40 și o restanță de 50. `baza` e textul fără partea cu restanța.
+ */
+export function analizeazaSume(text: string): { baza: string; extra: ExtraPlata[] } {
+  const sume = [...text.matchAll(BANI)];
+  const extra: ExtraPlata[] = [];
+  const taieri: [number, number][] = [];
+
+  sume.forEach((m, i) => {
+    const start = m.index ?? 0;
+    const sfarsit = start + m[0].length;
+    const dupaAnterioara = i > 0 ? (sume[i - 1].index ?? 0) + sume[i - 1][0].length : 0;
+    const inainte = text.slice(Math.max(dupaAnterioara, start - 25), start);
+    const pana = i + 1 < sume.length ? (sume[i + 1].index ?? text.length) : text.length;
+    const dupa = text.slice(sfarsit, pana);
+
+    const semne = [...inainte.matchAll(SEMN_INAINTE)];
+    const semn = semne.length ? semne[semne.length - 1] : undefined;
+    const semnDupa = dupa.match(SEMN_DUPA);
+    if (!semn && !semnDupa) return;
+
+    const cuvinte = `${semn?.[0] ?? ''} ${semnDupa?.[0] ?? ''}`.toLowerCase();
+    extra.push({
+      suma: Number(m[1].replace(',', '.')),
+      moneda: monedaDinCuvant(m[2]),
+      nota: /restan/.test(cuvinte) ? 'restanță' : 'în plus',
+    });
+    let de = semn ? Math.max(dupaAnterioara, start - 25) + (semn.index ?? 0) : start;
+    while (de > 0 && /[\s+,;]/.test(text[de - 1])) de--; // și „+" sau virgula dinainte
+    taieri.push([de, sfarsit + (semnDupa ? semnDupa[0].length : 0)]);
+  });
+
+  if (!taieri.length) return { baza: text, extra };
+  let baza = '';
+  let cursor = 0;
+  for (const [de, pana] of taieri) {
+    baza += text.slice(cursor, de);
+    cursor = pana;
+  }
+  baza += text.slice(cursor);
+  baza = baza.replace(/\s+/g, ' ').replace(/^[\s,;+-]+|[\s,;+-]+$/g, '');
+  return { baza, extra };
+}
+
+/** Adaugă la plată sumele extra găsite oriunde în textul rezervării (fără dubluri). */
+function cuExtra(plata: Plata, text: string): Plata {
+  const extra = [...(plata.extra ?? [])];
+  for (const x of analizeazaSume(text).extra) {
+    if (!extra.some((y) => y.suma === x.suma && y.moneda === x.moneda)) extra.push(x);
+  }
+  return extra.length ? { ...plata, extra } : plata;
+}
+
 export function parsePlata(celula: string): Plata {
-  const sume = [...celula.matchAll(BANI)];
+  const { baza, extra } = analizeazaSume(celula);
+  const sume = [...baza.matchAll(BANI)];
   const prima = sume[0];
   const moneda: Moneda = prima ? monedaDinCuvant(prima[2]) : 'EUR';
   const achitat =
@@ -154,7 +214,8 @@ export function parsePlata(celula: string): Plata {
     metoda,
     suma: prima ? Number(prima[1].replace(',', '.')) : undefined,
     moneda,
-    notaPret: celula,
+    notaPret: baza || undefined,
+    extra: extra.length ? extra : undefined,
   };
 }
 
@@ -393,7 +454,10 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
     }
 
     if (!plata && esteCelulaPlata(c)) {
-      plata = parsePlata(c);
+      const p = parsePlata(c);
+      // O celulă doar cu restanță: prețul poate veni în altă celulă; restanța se adaugă la sfârșit din textul întreg.
+      if (p.suma === undefined && p.extra?.length && !p.metoda && p.stare !== 'achitat') return;
+      plata = p;
       return;
     }
 
@@ -468,7 +532,7 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
     lasare,
     observatii: note.length ? note.join(' | ') : undefined,
     eticheta: eticheta.length ? eticheta.join(', ') : undefined,
-    plata: plata ?? { stare: 'de_incasat', moneda: 'EUR' },
+    plata: cuExtra(plata ?? { stare: 'de_incasat', moneda: 'EUR' }, original),
     textOriginal: original,
     data: data ?? dataRelativa,
     directie,

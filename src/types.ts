@@ -7,6 +7,15 @@ export interface Telefon {
   eticheta?: string;
 }
 
+/** Sumă restantă pe lângă preț (ex. „încă 50 euro restanți"), de încasat separat. */
+export interface ExtraPlata {
+  suma: number;
+  moneda: Moneda;
+  /** Cum a fost numită în mesaj: „restanță", „în plus" etc. */
+  nota?: string;
+  incasat?: { suma: number; moneda: Moneda };
+}
+
 export interface Plata {
   stare: StarePlata;
   /** Cum s-a plătit / se plătește: cash, OP, bancă, factură etc. */
@@ -17,6 +26,8 @@ export interface Plata {
   notaPret?: string;
   /** Ce a plătit efectiv clientul șoferului (ex. alege lei în loc de euro). */
   incasat?: { suma: number; moneda: Moneda };
+  /** Sume restante peste preț, fiecare cu încasarea ei. */
+  extra?: ExtraPlata[];
 }
 
 export interface Rezervare {
@@ -68,6 +79,8 @@ export interface Cursa {
   sumaSofer?: number;
   /** De unde vine suma („Șilagiu → Buziaș"), „manual" sau „Preț lipsă: …". */
   sumaSursa?: string;
+  /** Marcat de șofer: cursa nu are bilet de parcare (de ex. la departures). Doar informativ, nu blochează decontul. */
+  faraBilet?: boolean;
 }
 
 /** Monedele cu curs de schimb față de leu (RON are cursul 1). */
@@ -136,6 +149,8 @@ export interface Decont {
   curse?: { cursaId: string; suma: number }[];
   /** Cursurile (lei pentru 1 unitate) folosite la acest decont. */
   cursuri?: Cursuri;
+  /** Banii păstrați de șofer la acest decont (pentru rest etc.), pe monede. Rămân de predat data viitoare. */
+  pastrat?: Record<Moneda, number>;
   /** Rezultatul în lei: pozitiv = de primit de la firmă, negativ = de predat firmei. */
   soldRon?: number;
   note?: string;

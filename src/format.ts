@@ -44,6 +44,7 @@ export function deIncasat(rezervari: Rezervare[]): Totaluri {
   const total: Totaluri = zero();
   for (const r of rezervari) {
     if (r.plata.stare === 'de_incasat' && !r.plata.incasat && r.plata.suma) total[r.plata.moneda] += r.plata.suma;
+    for (const x of r.plata.extra ?? []) if (!x.incasat) total[x.moneda] += x.suma;
   }
   return total;
 }
@@ -53,6 +54,7 @@ export function incasat(rezervari: Rezervare[]): Totaluri {
   const total: Totaluri = zero();
   for (const r of rezervari) {
     if (r.plata.incasat) total[r.plata.incasat.moneda] += r.plata.incasat.suma;
+    for (const x of r.plata.extra ?? []) if (x.incasat) total[x.incasat.moneda] += x.incasat.suma;
   }
   return total;
 }

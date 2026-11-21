@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseMesaje, parsePlata, parseRuta, parseZbor, sumeDinText } from './parser';
+import { analizeazaSume, parseMesaje, parsePlata, parseRuta, parseZbor, sumeDinText } from './parser';
 
 // Date inventate; doar structura imită mesajele reale.
 const t = (...c: string[]) => c.join('\t');
@@ -379,5 +379,45 @@ describe('persoană de contact și „pentru" la lăsare', () => {
     expect(r.lasare).toBe('Budapesta, centru');
     expect(r.observatii).not.toContain('preluare');
     expect(r.plata.stare).toBe('achitat');
+  });
+});
+
+describe('sume extra (restanțe)', () => {
+  it('preț în două monede rămâne alternativă, nu extra', () => {
+    expect(analizeazaSume('40 euro / 220 lei')).toEqual({ baza: '40 euro / 220 lei', extra: [] });
+  });
+  it('„încă 50 euro restanți" pe lângă 40 euro', () => {
+    const r = analizeazaSume('40 euro + încă 50 euro restanți');
+    expect(r.extra).toEqual([{ suma: 50, moneda: 'EUR', nota: 'restanță' }]);
+    expect(r.baza).toBe('40 euro');
+  });
+  it('restanța scrisă înaintea sumei sau după', () => {
+    expect(analizeazaSume('40 euro, restanta 50 euro').extra).toHaveLength(1);
+    expect(analizeazaSume('40 euro si 50 euro in plus').extra[0]).toMatchObject({ suma: 50, nota: 'în plus' });
+    expect(analizeazaSume('40 euro pe langa 50 euro').extra[0].suma).toBe(50);
+  });
+  it('un singur preț fără semne nu devine extra', () => {
+    expect(analizeazaSume('40 euro cash la sofer').extra).toEqual([]);
+  });
+  it('parsePlata: prețul rămâne 40, restanța e separată, iar 50 nu devine variantă de preț', () => {
+    const p = parsePlata('40 euro + încă 50 euro restanți');
+    expect(p).toMatchObject({ stare: 'de_incasat', suma: 40, moneda: 'EUR', notaPret: '40 euro' });
+    expect(p.extra).toEqual([{ suma: 50, moneda: 'EUR', nota: 'restanță' }]);
+  });
+  it('în rezervare: restanța din altă celulă se adaugă la plată', () => {
+    const r = parseMesaje(
+      t('Ion', 'Testescu', '0700000001', '2026-11-16', 'Timisoara-Budapesta', 'Timisoara', '12:00', '40 euro', 'Mai are de încasat 50 euro restanți din cursa trecută'),
+      AZI,
+    ).rezervari[0];
+    expect(r.plata.suma).toBe(40);
+    expect(r.plata.extra).toEqual([{ suma: 50, moneda: 'EUR', nota: 'restanță' }]);
+  });
+  it('restanța vine într-o celulă înaintea prețului: prețul tot se citește', () => {
+    const r = parseMesaje(
+      t('Ion', 'Testescu', '0700000001', '2026-11-16', 'Timisoara-Budapesta', 'Timisoara', '12:00', 'restanta 50 euro', '40 euro'),
+      AZI,
+    ).rezervari[0];
+    expect(r.plata.suma).toBe(40);
+    expect(r.plata.extra?.map((x) => x.suma)).toEqual([50]);
   });
 });

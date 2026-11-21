@@ -12,6 +12,9 @@ import { traseu } from '../traseu';
 import { useCerePret } from '../cerepret';
 import { aplicaPret, opririCursa, SURSA_MANUALA } from '../preturi';
 import { pretSpalare, spalariDecontate } from '../spalatorie';
+import { analizaCursa, soldCurse } from '../decontcursa';
+import { textSold } from './DecontScreen';
+import { inRon } from '../curs';
 import type { Rezervare } from '../types';
 
 function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
@@ -47,6 +50,9 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
             <span class={r.plata.stare === 'achitat' ? 'pill achitat' : 'pill de-incasat'}>
               {r.plata.stare === 'achitat' ? 'Achitat' : `De încasat ${textDeIncasat([r])}`}
             </span>
+            {r.plata.stare === 'achitat' && textDeIncasat([r]) !== '—' && (
+              <span class="pill de-incasat">Restanță {textDeIncasat([r])}</span>
+            )}
           </button>
           {r.zbor && linkZbor(r.zbor) && (
             <div class="actiuni">
@@ -80,6 +86,9 @@ export function CursaScreen({ id }: { id: string }) {
   const spalari = cursa.spalari ?? 0;
   const pret = pretSpalare(masina, setari);
   const decontate = spalariDecontate(id, deconturi);
+  const analiza = analizaCursa(cursa, { rezervari, bilete, deconturi, masini, setari });
+  const rezultat = soldCurse([analiza], setari.cursuri);
+  const fmtLei = (x: number) => `${Math.round(x * 100) / 100} lei`;
 
   async function recalculeaza() {
     await saveCursa(aplicaPret(cursa!, await calculeaza(opririCursa(cursa!, ale))));
@@ -194,6 +203,58 @@ export function CursaScreen({ id }: { id: string }) {
             ? `${pret} lei la fiecare spălare${spalari > 0 ? ` · în total ${pret * spalari} lei` : ''}${decontate > 0 ? ` · ${decontate} deja decontate` : ''}`
             : 'Suma pentru spălătorie nu e setată (Setări).'}
       </p>
+
+      <h2 class="day">Decont</h2>
+      <div class="decont-cursa">
+        <span class="linie">
+          💼 Cursă:{' '}
+          {analiza.sumaCursa > 0
+            ? fmtLei(analiza.sumaCursa)
+            : (cursa.sumaSofer ?? 0) > 0
+              ? `${fmtLei(cursa.sumaSofer ?? 0)} (decontată)`
+              : 'fără sumă încă'}
+        </span>
+        <span class="linie">
+          🅿️ Bilet parcare:{' '}
+          {aleBilete.length > 0
+            ? aleBilete
+                .map((b) => {
+                  const ron = b.suma && b.moneda !== 'RON' ? inRon(b.suma, b.moneda, setari.cursuri) : undefined;
+                  return `${b.suma ? fmtSumaBilet(b.suma, b.moneda) : 'sumă necitită'}${ron !== undefined ? ` (≈ ${fmtLei(ron)})` : ''}`;
+                })
+                .join(' + ')
+            : cursa.faraBilet
+              ? 'fără bilet'
+              : 'încă nu e adăugat'}
+        </span>
+        <span class="linie">
+          🧽 Spălătorie: {spalari > 0 ? `×${spalari} · ${fmtLei(pret * spalari)}` : 'nu'}
+        </span>
+        {analiza.deDecontat && (
+          <span class="linie rezumat">
+            De luat {fmtLei(rezultat.deLuat)}
+            {analiza.incasat.EUR + analiza.incasat.RON + analiza.incasat.GBP + analiza.incasat.CHF > 0 && rezultat.lipsa.length === 0
+              ? ` · ${textSold(rezultat.sold)}`
+              : ''}
+          </span>
+        )}
+        {analiza.decontata && <span class="linie ok">✓ Decontată</span>}
+      </div>
+      {aleBilete.length === 0 && (
+        <label class="row">
+          <input
+            type="checkbox"
+            style="width:auto;min-height:0"
+            checked={!!cursa.faraBilet}
+            onChange={(e) => set({ faraBilet: e.currentTarget.checked || undefined })}
+          />
+          <span>Fără bilet de parcare la această cursă</span>
+        </label>
+      )}
+      <button class="primary" disabled={!analiza.deDecontat} onClick={() => go(`/decont/${id}`)}>
+        Decontează această cursă
+      </button>
+      <p class="muted">Decontul nu se blochează dacă lipsește ceva: poți adăuga biletul sau spălarea și după.</p>
 
       <h2 class="day">Bilete aeroport</h2>
       {aleBilete.map((b) => (

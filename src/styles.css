@@ -290,3 +290,4 @@ dialog.modal::backdrop { background: rgb(0 0 0 / .5); }
 .chip-x { border: 0; background: transparent; padding: 0 0 0 4px; min-height: 0; color: var(--muted); }
 .total.sold-primit { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
 .total.sold-predat { background: var(--warn-soft); color: var(--warn); font-weight: 700; }
+.icon-gol { width: 44px; text-align: center; flex: none; }

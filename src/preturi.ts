@@ -11,6 +11,16 @@ export const norm = (s: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+/** Timișoara e kilometrul 0: mereu în listă, cu suma 0, nu se poate șterge sau modifica. */
+export const TIMISOARA: Localitate = { id: 'timisoara', nume: 'Timișoara', sumaRon: 0 };
+
+export const esteTimisoara = (nume: string) => norm(nume) === 'timisoara';
+
+/** Lista de localități cu Timișoara pusă la început (orice „Timișoara" salvată de utilizator e ignorată). */
+export function cuTimisoara(localitati: Localitate[]): Localitate[] {
+  return [TIMISOARA, ...localitati.filter((l) => l.id !== TIMISOARA.id && !esteTimisoara(l.nume))];
+}
+
 /** Opririle cursei, fără Timișoara de la capete. */
 export function opririCursa(cursa: Cursa, rezervari: Rezervare[]): string[] {
   const t = traseu(cursa, rezervari);
@@ -19,10 +29,11 @@ export function opririCursa(cursa: Cursa, rezervari: Rezervare[]): string[] {
 
 /** Mama cu preț pentru o oprire (mamă sau limitrofă), dacă o știm. */
 export function gasesteMama(nume: string, localitati: Localitate[]): Localitate | undefined {
+  const toate = cuTimisoara(localitati);
   const n = norm(nume);
-  const gasita = localitati.find((l) => norm(l.nume) === n);
+  const gasita = toate.find((l) => norm(l.nume) === n);
   if (!gasita) return undefined;
-  const mama = gasita.mamaId ? localitati.find((l) => l.id === gasita.mamaId) : gasita;
+  const mama = gasita.mamaId ? toate.find((l) => l.id === gasita.mamaId) : gasita;
   return mama && mama.sumaRon !== undefined ? mama : undefined;
 }
 
@@ -46,7 +57,8 @@ export function calculeazaSuma(opriri: string[], localitati: Localitate[]): Pret
     const mama = gasesteMama(o, localitati)!;
     if (!cel || (mama.sumaRon ?? 0) > (cel.mama.sumaRon ?? 0)) cel = { oprire: o, mama };
   }
-  if (!cel) return { necunoscute: [] };
+  // Fără nicio oprire în afara Timișoarei: cursă locală, km 0.
+  if (!cel) return { suma: 0, sursa: 'Timișoara (km 0)', necunoscute: [] };
   const cale = norm(cel.oprire) === norm(cel.mama.nume) ? cel.oprire : `${cel.oprire} → ${cel.mama.nume}`;
   const multe = opriri.length > 1 ? ` (cea mai scumpă din ${opriri.join(' + ')})` : '';
   return { suma: cel.mama.sumaRon, sursa: cale + multe, necunoscute: [] };

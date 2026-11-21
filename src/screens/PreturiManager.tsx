@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { CautaLocalitate } from '../cautalocalitate';
 import { Fereastra } from '../fereastra';
-import { norm } from '../preturi';
+import { cuTimisoara, esteTimisoara, norm, TIMISOARA } from '../preturi';
 import { deleteLocalitate, newId, saveLocalitate, saveSetari, useStore } from '../store';
 import { Field } from '../ui';
 
@@ -10,7 +10,9 @@ const numar = (v: string) => Math.max(0, Number(v.replace(',', '.')) || 0);
 /** Fereastra „Prețuri": salariul de bază, spălătoria și suma pe cursă pentru fiecare localitate mamă, cu limitrofele ei. */
 export function PreturiManager({ onClose }: { onClose: () => void }) {
   const { setari, localitati } = useStore();
-  const mame = localitati.filter((l) => !l.mamaId).sort((a, b) => a.nume.localeCompare(b.nume, 'ro'));
+  const mame = cuTimisoara(localitati)
+    .filter((l) => !l.mamaId)
+    .sort((a, b) => (a.id === TIMISOARA.id ? -1 : b.id === TIMISOARA.id ? 1 : a.nume.localeCompare(b.nume, 'ro')));
   const limitrofe = (id: string) => localitati.filter((l) => l.mamaId === id).sort((a, b) => a.nume.localeCompare(b.nume, 'ro'));
 
   const [nume, setNume] = useState('');
@@ -19,7 +21,7 @@ export function PreturiManager({ onClose }: { onClose: () => void }) {
   const [numeLimitrofa, setNumeLimitrofa] = useState('');
   const [mesaj, setMesaj] = useState('');
 
-  const exista = (n: string) => localitati.some((l) => norm(l.nume) === norm(n));
+  const exista = (n: string) => esteTimisoara(n) || localitati.some((l) => norm(l.nume) === norm(n));
 
   async function adaugaMama() {
     const n = nume.trim();
@@ -75,7 +77,8 @@ export function PreturiManager({ onClose }: { onClose: () => void }) {
       <h3 class="modal-sub">Suma pe cursă, pe localitate</h3>
       <p class="muted">
         Introdu localitățile mari (mame) cu suma lor. Localitățile mici din apropiere (limitrofe) se leagă de o mamă și iau
-        aceeași sumă. Cursa ia suma celei mai scumpe opriri.
+        aceeași sumă. Cursa ia suma celei mai scumpe opriri. Timișoara e kilometrul 0 (0 lei) și nu se poate șterge; localitățile
+        din jurul ei (Giroc, Dumbrăvița) se adaugă ca limitrofe ale ei.
       </p>
       {mame.length === 0 && <p class="muted">Nicio localitate încă.</p>}
       {mame.map((m) => (
@@ -88,20 +91,27 @@ export function PreturiManager({ onClose }: { onClose: () => void }) {
               min={0}
               aria-label={`Suma pentru ${m.nume}`}
               value={m.sumaRon ?? 0}
+              disabled={m.id === TIMISOARA.id}
               onInput={(e) => saveLocalitate({ ...m, sumaRon: numar(e.currentTarget.value) })}
             />
             <span>lei</span>
-            <button
-              class="icon"
-              aria-label={`Șterge ${m.nume}`}
-              onClick={() => {
-                const n = limitrofe(m.id).length;
-                const extra = n ? ` și cele ${n} limitrofe ale ei` : '';
-                if (confirm(`Ștergi ${m.nume}${extra}? Cursele deja salvate își păstrează suma.`)) deleteLocalitate(m.id);
-              }}
-            >
-              ✕
-            </button>
+            {m.id === TIMISOARA.id ? (
+              <span class="icon-gol" title="Kilometrul 0: nu se poate șterge">
+                📍
+              </span>
+            ) : (
+              <button
+                class="icon"
+                aria-label={`Șterge ${m.nume}`}
+                onClick={() => {
+                  const n = limitrofe(m.id).length;
+                  const extra = n ? ` și cele ${n} limitrofe ale ei` : '';
+                  if (confirm(`Ștergi ${m.nume}${extra}? Cursele deja salvate își păstrează suma.`)) deleteLocalitate(m.id);
+                }}
+              >
+                ✕
+              </button>
+            )}
           </div>
           <div class="chips">
             {limitrofe(m.id).map((l) => (

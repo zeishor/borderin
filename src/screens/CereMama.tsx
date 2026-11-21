@@ -2,7 +2,7 @@ import { useRef, useState } from 'preact/hooks';
 import { CautaLocalitate } from '../cautalocalitate';
 import { Fereastra } from '../fereastra';
 import { celeMaiApropiate, useBazaLocalitati } from '../localitati';
-import { norm } from '../preturi';
+import { cuTimisoara, esteTimisoara, norm, TIMISOARA } from '../preturi';
 import { newId, saveLocalitate, useStore } from '../store';
 
 /**
@@ -12,7 +12,7 @@ import { newId, saveLocalitate, useStore } from '../store';
 export function CereMama({ nume, onGata }: { nume: string; onGata: () => void }) {
   const { localitati } = useStore();
   const baza = useBazaLocalitati();
-  const mame = localitati.filter((l) => !l.mamaId && l.sumaRon !== undefined);
+  const mame = cuTimisoara(localitati).filter((l) => !l.mamaId && l.sumaRon !== undefined);
   const apropiate = celeMaiApropiate(nume, mame, baza).slice(0, 2);
   const [numeMama, setNumeMama] = useState(nume);
   const [suma, setSuma] = useState('');
@@ -33,6 +33,7 @@ export function CereMama({ nume, onGata }: { nume: string; onGata: () => void })
   async function mamaNoua() {
     const n = numeMama.trim();
     const s = Number(suma.replace(',', '.'));
+    if (esteTimisoara(n)) return alege(TIMISOARA.id); // Timișoara e kilometrul 0, fără sumă de introdus
     if (!n || !(s > 0)) return setEroare('Scrie localitatea mamă și o sumă mai mare ca 0.');
     let mama = localitati.find((l) => !l.mamaId && norm(l.nume) === norm(n));
     if (!mama) {
@@ -51,8 +52,8 @@ export function CereMama({ nume, onGata }: { nume: string; onGata: () => void })
         și aici.
       </p>
       <p class="muted">
-        Exemple: Șilagiu → mamă Buziaș. Pecica → mamă Arad. Otopeni → mamă București. Se întreabă o singură dată: alegerea se
-        ține minte.
+        Exemple: Șilagiu → mamă Buziaș. Pecica → mamă Arad. Otopeni → mamă București. O localitate din jurul Timișoarei (Giroc,
+        Dumbrăvița) → mamă Timișoara (0 lei). Se întreabă o singură dată: alegerea se ține minte.
       </p>
 
       {apropiate.length > 0 && (

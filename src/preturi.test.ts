@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aplicaPret, calculeazaSuma, gasesteMama, necunoscute } from './preturi';
+import { aplicaPret, calculeazaSuma, cuTimisoara, gasesteMama, necunoscute, TIMISOARA } from './preturi';
 import type { Cursa, Localitate } from './types';
 
 const loc: Localitate[] = [
@@ -34,8 +34,20 @@ describe('prețuri', () => {
     expect(r.necunoscute).toEqual(['Lugoj']);
     expect(necunoscute(['Arad', 'Lugoj'], loc)).toEqual(['Lugoj']);
   });
-  it('fără opriri nu e nimic de calculat', () => {
-    expect(calculeazaSuma([], loc)).toEqual({ necunoscute: [] });
+  it('fără opriri în afara Timișoarei: cursă locală, suma 0', () => {
+    expect(calculeazaSuma([], loc)).toEqual({ suma: 0, sursa: 'Timișoara (km 0)', necunoscute: [] });
+  });
+  it('Timișoara e mereu kilometrul 0, chiar dacă nu e în listă', () => {
+    expect(gasesteMama('Timisoara', [])?.sumaRon).toBe(0);
+    expect(gasesteMama('TIMIȘOARA', loc)?.id).toBe(TIMISOARA.id);
+  });
+  it('limitrofă a Timișoarei: suma 0, și se ignoră o Timișoară salvată cu preț', () => {
+    const l: Localitate[] = [{ id: 'g', nume: 'Giroc', mamaId: 'timisoara' }, { id: 't', nume: 'Timișoara', sumaRon: 99 }];
+    expect(calculeazaSuma(['Giroc'], l)).toMatchObject({ suma: 0, sursa: 'Giroc → Timișoara' });
+    expect(cuTimisoara(l).filter((x) => x.nume === 'Timișoara')).toHaveLength(1);
+  });
+  it('Timișoara nu scumpește o cursă: contează cea mai scumpă oprire', () => {
+    expect(calculeazaSuma(['Giroc', 'Arad'], [...loc, { id: 'g', nume: 'Giroc', mamaId: 'timisoara' }]).suma).toBe(200);
   });
   it('aplicaPret scoate suma veche când lipsește un preț', () => {
     const c = { id: 'c', sumaSofer: 100 } as Cursa;

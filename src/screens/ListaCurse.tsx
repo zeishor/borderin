@@ -3,12 +3,12 @@ import { useEffect, useState } from 'preact/hooks';
 import { useStore } from '../store';
 import { ETICHETE_STARE, interval, stari } from '../stare';
 import { analizaCursa } from '../decontcursa';
-import { areDeIncasat, arePlataIncasata, fmtData, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
+import { areDeIncasat, arePlataIncasata, fmtData, textCheltuieli, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Screen } from '../ui';
 import { traseu } from '../traseu';
 
 export function ListaCurse() {
-  const { curse, rezervari, masini, setari, bilete, deconturi } = useStore();
+  const { curse, rezervari, masini, setari, bilete, deconturi, cheltuieli } = useStore();
   const [acum, setAcum] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setAcum(Date.now()), 60_000);
@@ -48,7 +48,7 @@ export function ListaCurse() {
             const ale = rezervari.filter((r) => r.cursaId === c.id);
             const masina = masini.find((m) => m.id === c.masinaId);
             const st = stare.get(c.id) ?? 'viitoare';
-            const an = analizaCursa(c, { rezervari: ale, bilete, deconturi, masini, setari, curse });
+            const an = analizaCursa(c, { rezervari: ale, bilete, deconturi, masini, setari, curse, cheltuieli });
             return (
               <button key={c.id} class={`card trip st-${st}${an.decontata ? ' decontata' : ''}${an.deDecontat ? ' de-decontat' : ''}`} onClick={() => go(`/cursa/${c.id}`)}>
                 <span class="trip-cap">
@@ -73,6 +73,9 @@ export function ListaCurse() {
                   {an.deDecontat && st !== 'viitoare' && st !== 'urmatoarea' && <span class="chip decont-da">💼 De decontat</span>}
                   {an.decontata && <span class="chip decont-ok">💼 Decontată ✓</span>}
                   {c.locala && <span class="chip">📍 {an.inclusaInSalariu ? 'locală, în salariu' : 'locală'}</span>}
+                  {an.cheltuieliToate.length > 0 && (
+                    <span class="chip">🧾 {textCheltuieli(an.cheltuieliToate)}</span>
+                  )}
                   {(c.spalari ?? 0) > 0 && <span class="chip spal-da">🧽 ×{c.spalari}</span>}
                 </span>
                 {ale.length > 0 && (

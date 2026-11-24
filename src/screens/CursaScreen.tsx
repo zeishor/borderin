@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { go } from '../router';
-import { deleteCursa, newId, saveBilet, saveCursa, saveRezervare, useStore } from '../store';
+import { deleteCheltuiala, deleteCursa, newId, saveBilet, saveCheltuiala, saveCursa, saveRezervare, useStore } from '../store';
 import { arePlataIncasata, fmtMoment, fmtData, fmtSumaBilet, textCheltuieli, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Incasare } from '../incasare';
 import { parseMesaje } from '../parser';
@@ -16,7 +16,7 @@ import { analizaCursa, soldCurse } from '../decontcursa';
 import { textSold } from './DecontScreen';
 import { inRon } from '../curs';
 import { statusLocala } from '../locale';
-import type { Rezervare } from '../types';
+import type { MonedaBilet, Rezervare } from '../types';
 
 function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
   const sortate = [...props.lista].sort((a, b) => (a.ora ?? '').localeCompare(b.ora ?? ''));
@@ -71,8 +71,12 @@ function Sectiune(props: { titlu: string; lista: Rezervare[] }) {
 }
 
 export function CursaScreen({ id }: { id: string }) {
-  const { curse, rezervari, masini, bilete, setari, deconturi } = useStore();
+  const { curse, rezervari, masini, bilete, setari, deconturi, cheltuieli } = useStore();
   const [adauga, setAdauga] = useState('');
+  const [descriere, setDescriere] = useState('');
+  const [sumaNoua, setSumaNoua] = useState('');
+  const [monedaNoua, setMonedaNoua] = useState<MonedaBilet>('RON');
+  const [fotoNoua, setFotoNoua] = useState<File>();
   const { element, calculeaza } = useCerePret();
   const cursa = curse.find((c) => c.id === id);
   if (!cursa) return <Screen title="Cursă" backTo="/"><p class="empty">Cursa nu există.</p></Screen>;
@@ -87,10 +91,29 @@ export function CursaScreen({ id }: { id: string }) {
   const spalari = cursa.spalari ?? 0;
   const pret = pretSpalare(masina, setari);
   const decontate = spalariDecontate(id, deconturi);
-  const analiza = analizaCursa(cursa, { rezervari, bilete, deconturi, masini, setari, curse });
+  const analiza = analizaCursa(cursa, { rezervari, bilete, deconturi, masini, setari, curse, cheltuieli });
   const locala = statusLocala(curse, cursa, setari.curseLocaleInclusePeLuna);
   const rezultat = soldCurse([analiza], setari.cursuri);
   const fmtLei = (x: number) => `${Math.round(x * 100) / 100} lei`;
+
+  async function adaugaCheltuiala() {
+    const suma = Number(sumaNoua.replace(',', '.'));
+    if (!(suma > 0)) return;
+    const acum = Date.now();
+    await saveCheltuiala({
+      id: newId(),
+      cursaId: id,
+      creat: acum,
+      modificat: acum,
+      descriere: descriere.trim(),
+      suma,
+      moneda: monedaNoua,
+      foto: fotoNoua,
+    });
+    setDescriere('');
+    setSumaNoua('');
+    setFotoNoua(undefined);
+  }
 
   async function recalculeaza() {
     await saveCursa(aplicaPret(cursa!, await calculeaza(opririCursa(cursa!, ale))));
@@ -231,6 +254,11 @@ export function CursaScreen({ id }: { id: string }) {
               ? 'fără bilet'
               : 'încă nu e adăugat'}
         </span>
+        {analiza.cheltuieliToate.length > 0 && (
+          <span class="linie">
+            🧾 Cheltuieli extra: {textCheltuieli(analiza.cheltuieliToate)}
+          </span>
+        )}
         <span class="linie">
           🧽 Spălătorie: {spalari > 0 ? `×${spalari} · ${fmtLei(pret * spalari)}` : 'nu'}
         </span>
@@ -277,6 +305,57 @@ export function CursaScreen({ id }: { id: string }) {
         Decontează această cursă
       </button>
       <p class="muted">Decontul nu se blochează dacă lipsește ceva: poți adăuga biletul sau spălarea și după.</p>
+
+      <h2 class="day">Cheltuieli extra</h2>
+      {analiza.cheltuieliToate.length === 0 && <p class="muted">Nicio cheltuială extra la această cursă.</p>}
+      {analiza.cheltuieliToate.map((x) => (
+        <div class="row" key={x.id}>
+          <span class="grow">
+            🧾 {x.descriere || 'Cheltuială'} · <strong>{fmtSumaBilet(x.suma, x.moneda)}</strong>
+            {x.foto && (
+              <>
+                {' '}
+                <button class="chip adauga" onClick={() => window.open(URL.createObjectURL(x.foto!), '_blank')}>
+                  📷 bon
+                </button>
+              </>
+            )}
+            {!analiza.cheltuieli.some((c) => c.id === x.id) && <span class="muted"> · decontată</span>}
+          </span>
+          <button
+            class="icon"
+            aria-label="Șterge cheltuiala"
+            onClick={() => confirm(`Ștergi cheltuiala „${x.descriere || 'fără descriere'}"?`) && deleteCheltuiala(x.id)}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+      <div class="row">
+        <input class="grow" placeholder="Descriere (ex. taxă de drum)" value={descriere} onInput={(e) => setDescriere(e.currentTarget.value)} />
+      </div>
+      <div class="row">
+        <input
+          class="grow"
+          inputMode="decimal"
+          placeholder="Suma"
+          value={sumaNoua}
+          onInput={(e) => setSumaNoua(e.currentTarget.value)}
+        />
+        <select class="narrow-select" value={monedaNoua} onChange={(e) => setMonedaNoua(e.currentTarget.value as MonedaBilet)}>
+          <option value="RON">lei</option>
+          <option value="EUR">€</option>
+          <option value="HUF">Ft</option>
+        </select>
+        <label class="btn">
+          {fotoNoua ? '📷 ✓' : '📷'}
+          <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => setFotoNoua(e.currentTarget.files?.[0] ?? undefined)} />
+        </label>
+        <button onClick={adaugaCheltuiala} disabled={!(Number(sumaNoua.replace(',', '.')) > 0)}>
+          Adaugă
+        </button>
+      </div>
+      <p class="muted">Se decontează odată cu cursa. Poza bonului e opțională.</p>
 
       <h2 class="day">Bilete aeroport</h2>
       {aleBilete.map((b) => (

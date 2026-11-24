@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { analizaCursa, soldCurse } from './decontcursa';
-import type { Bilet, Cursa, Decont, Masina, Rezervare, Setari } from './types';
+import type { Bilet, Cheltuiala, Cursa, Decont, Masina, Rezervare, Setari } from './types';
 
 const setari = { spalatorieMicaRon: 30, spalatorieMareRon: 50, cursuri: { EUR: 5.5 }, curseLocaleInclusePeLuna: 0 } as unknown as Setari;
 const masini = [{ id: 'm', nume: 'Mica', locuri: 4 } as Masina];
@@ -73,5 +73,19 @@ describe('decont pe cursă', () => {
     expect(a.inclusaInSalariu).toBe(true);
     expect(a.sumaCursa).toBe(0);
     expect(a.deDecontat).toBe(true); // mai are de predat banii încasați
+  });
+  it('cheltuieli extra: intră în de luat; după decont dispar, iar una nouă apare singură', () => {
+    const x = (id: string, suma: number) => ({ id, cursaId: 'c', suma, moneda: 'RON', descriere: 'taxă' }) as Cheltuiala;
+    const c0 = { id: 'c', data: '2026-11-14' } as Cursa;
+    const a = analizaCursa(c0, { ...ctx([], []), cheltuieli: [x('x1', 35), x('x2', 15)] });
+    expect(a.cheltuieli).toHaveLength(2);
+    expect(a.deDecontat).toBe(true);
+    expect(soldCurse([a], setari.cursuri).deLuat).toBe(50);
+    const d = { id: 'd', curse: [{ cursaId: 'c', suma: 0 }], bilete: [], cheltuieli: ['x1', 'x2'] } as unknown as Decont;
+    const dupa = analizaCursa(c0, { ...ctx([d], []), cheltuieli: [x('x1', 35), x('x2', 15), x('x3', 10)] });
+    expect(dupa.cheltuieli.map((e) => e.id)).toEqual(['x3']);
+    expect(dupa.deDecontat).toBe(true);
+    const gata = analizaCursa(c0, { ...ctx([d], []), cheltuieli: [x('x1', 35), x('x2', 15)] });
+    expect(gata.decontata).toBe(true);
   });
 });

@@ -61,6 +61,12 @@ function RandCursa(props: {
             🅿️ {textBiletLei(b, cursuri)}
           </span>
         ))}
+        {a.cheltuieli.map((x) => (
+          <span class="linie" key={x.id}>
+            🧾 {x.descriere || 'Cheltuială'} · {fmtSumaBilet(x.suma, x.moneda)}
+            {x.moneda !== 'RON' && inRon(x.suma, x.moneda, cursuri) !== undefined ? ` (≈ ${lei(Math.round((inRon(x.suma, x.moneda, cursuri) ?? 0) * 100) / 100)})` : ''}
+          </span>
+        ))}
         {a.spalari.nr > 0 && (
           <span class="linie">
             🧽 Spălătorie ×{a.spalari.nr} · {lei(a.spalari.suma)}
@@ -77,7 +83,7 @@ function RandCursa(props: {
 }
 
 export function DecontScreen({ preselect }: { preselect?: string }) {
-  const { rezervari, bilete, curse, deconturi, masini, setari } = useStore();
+  const { rezervari, bilete, curse, deconturi, masini, setari, cheltuieli } = useStore();
   const [data, setData] = useState(azi());
   const [bifate, setBifate] = useState<Record<string, boolean>>({});
   const [pastrat, setPastrat] = useState<Partial<Record<Moneda, string>>>({});
@@ -86,7 +92,7 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
   const [luna, setLuna] = useState(azi().slice(0, 7));
 
   const rest = restDePredat(rezervari, deconturi);
-  const ctx = { rezervari, bilete, deconturi, masini, setari, curse };
+  const ctx = { rezervari, bilete, deconturi, masini, setari, curse, cheltuieli };
   const stare = stari(curse, setari, Date.now());
 
   // Cursele cu ceva de decontat, cele mai noi primele.
@@ -115,10 +121,13 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
   for (const m of MONEDE) predat[m] = Math.max(Math.min(Math.max(rest[m], 0), incasatAlese[m]) - pastratNr[m], 0);
 
   const bileteAlese = alese.flatMap((a) => a.bilete);
+  const cheltuieliAlese = alese.flatMap((a) => a.cheltuieli);
+  const sumaLei = (lista: { suma?: number; moneda: MonedaBilet }[]) =>
+    Math.round(lista.reduce((t, x) => t + (x.suma ? (inRon(x.suma, x.moneda, cursuri) ?? 0) : 0), 0) * 100) / 100;
   const sumaCurse = alese.reduce((t, a) => t + a.sumaCursa, 0);
   const sumaSpal = alese.reduce((t, a) => t + a.spalari.suma, 0);
-  const sold = calculeazaSold({ curse: sumaCurse, spalatorii: sumaSpal, bilete: bileteAlese, predat, cursuri });
-  const necesare = monedeNecesareCurs(predat, bileteAlese) as MonedaCurs[];
+  const sold = calculeazaSold({ curse: sumaCurse, spalatorii: sumaSpal, bilete: [...bileteAlese, ...cheltuieliAlese], predat, cursuri });
+  const necesare = monedeNecesareCurs(predat, [...bileteAlese, ...cheltuieliAlese]) as MonedaCurs[];
   const vizibile = MONEDE.filter((m) => incasatAlese[m] > 0 || pastratNr[m] > 0 || pastrat[m] !== undefined);
   const nuPoateInregistra = alese.length === 0 || sold.lipsa.length > 0;
 
@@ -136,6 +145,7 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
       predat,
       pastrat: MONEDE.some((m) => pastratNr[m] > 0) ? pastratNr : undefined,
       bilete: bileteAlese.map((b) => b.id),
+      cheltuieli: cheltuieliAlese.length ? cheltuieliAlese.map((x) => x.id) : undefined,
       spalatorii: spal.length ? spal.map((a) => ({ cursaId: a.cursa.id, nr: a.spalari.nr, suma: a.spalari.suma })) : undefined,
       curse: curseDec.map((a) => ({ cursaId: a.cursa.id, suma: a.sumaCursa })),
       cursuri: necesare.length ? cursuriFolosite : undefined,
@@ -257,7 +267,8 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
             </p>
             <ul>
               {sumaCurse > 0 && <li>Curse ({alese.filter((a) => a.sumaCursa > 0).length}): {lei(sumaCurse)}</li>}
-              {bileteAlese.length > 0 && <li>Parcare ({bileteAlese.length} bilete): {lei(Math.round((sold.deLuat - sumaCurse - sumaSpal) * 100) / 100)}</li>}
+              {bileteAlese.length > 0 && <li>Parcare ({bileteAlese.length} bilete): {lei(sumaLei(bileteAlese))}</li>}
+              {cheltuieliAlese.length > 0 && <li>Cheltuieli extra ({cheltuieliAlese.length}): {lei(sumaLei(cheltuieliAlese))}</li>}
               {sumaSpal > 0 && <li>Spălătorie: {lei(sumaSpal)}</li>}
             </ul>
             <p>
@@ -325,6 +336,7 @@ export function DecontScreen({ preselect }: { preselect?: string }) {
               <span class="muted">
                 {d.curse?.length ? `${d.curse.length} curse · ${lei(d.curse.reduce((t, c) => t + c.suma, 0))} · ` : ''}
                 {d.bilete.length} bilete{bd.length ? ` · ${textBilete(bd)}` : ''}
+                {d.cheltuieli?.length ? ` · ${d.cheltuieli.length} cheltuieli extra` : ''}
                 {d.spalatorii?.length
                   ? ` · ${d.spalatorii.reduce((n, s) => n + s.nr, 0)} spălări · ${lei(d.spalatorii.reduce((t, s) => t + s.suma, 0))}`
                   : ''}

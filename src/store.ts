@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { getAll, put, remove } from './db';
-import type { Bilet, Cursa, Decont, Localitate, Masina, Rezervare, Setari } from './types';
+import type { Bilet, Cheltuiala, Cursa, Decont, Localitate, Masina, Rezervare, Setari } from './types';
 
 interface State {
   curse: Cursa[];
@@ -10,12 +10,13 @@ interface State {
   bilete: Bilet[];
   deconturi: Decont[];
   localitati: Localitate[];
+  cheltuieli: Cheltuiala[];
 }
 
 const SETARI_ID = 'setari';
 const SETARI_IMPLICITE: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5, spalatorieMicaRon: 0, spalatorieMareRon: 0, cursuri: {}, salariuBazaRon: 0, curseLocaleInclusePeLuna: 0 };
 
-let state: State = { curse: [], rezervari: [], masini: [], setari: SETARI_IMPLICITE, bilete: [], deconturi: [], localitati: [] };
+let state: State = { curse: [], rezervari: [], masini: [], setari: SETARI_IMPLICITE, bilete: [], deconturi: [], localitati: [], cheltuieli: [] };
 const listeners = new Set<() => void>();
 
 function update(next: Partial<State>) {
@@ -28,7 +29,7 @@ export function newId(): string {
 }
 
 export async function initStore(): Promise<void> {
-  const [curse, rezervari, masini, setari, bilete, deconturi, localitati] = await Promise.all([
+  const [curse, rezervari, masini, setari, bilete, deconturi, localitati, cheltuieli] = await Promise.all([
     getAll<Cursa>('curse'),
     getAll<Rezervare>('rezervari'),
     getAll<Masina>('masini'),
@@ -36,6 +37,7 @@ export async function initStore(): Promise<void> {
     getAll<Bilet>('bilete'),
     getAll<Decont>('deconturi'),
     getAll<Localitate>('localitati'),
+    getAll<Cheltuiala>('cheltuieli'),
   ]);
   const salvate = setari.find((s) => s.id === SETARI_ID);
   update({
@@ -45,6 +47,7 @@ export async function initStore(): Promise<void> {
     bilete,
     deconturi,
     localitati,
+    cheltuieli,
     setari: salvate
       ? {
           pragExtraOre: salvate.pragExtraOre,
@@ -93,11 +96,18 @@ export async function deleteCursa(id: string): Promise<void> {
   await Promise.all(ale.map((r) => remove('rezervari', r.id)));
   const bileteSterse = new Set(state.bilete.filter((b) => b.cursaId === id).map((b) => b.id));
   await Promise.all([...bileteSterse].map((bid) => remove('bilete', bid)));
-  // Deconturile nu mai trebuie să trimită către bilete care nu mai există.
+  const cheltuieliSterse = new Set(state.cheltuieli.filter((x) => x.cursaId === id).map((x) => x.id));
+  await Promise.all([...cheltuieliSterse].map((xid) => remove('cheltuieli', xid)));
+  // Deconturile nu mai trebuie să trimită către bilete sau cheltuieli care nu mai există.
   const deconturi = await Promise.all(
     state.deconturi.map(async (d) => {
-      if (!d.bilete.some((bid) => bileteSterse.has(bid))) return d;
-      const curat = { ...d, bilete: d.bilete.filter((bid) => !bileteSterse.has(bid)) };
+      const arePierdute = d.bilete.some((bid) => bileteSterse.has(bid)) || (d.cheltuieli ?? []).some((xid) => cheltuieliSterse.has(xid));
+      if (!arePierdute) return d;
+      const curat = {
+        ...d,
+        bilete: d.bilete.filter((bid) => !bileteSterse.has(bid)),
+        cheltuieli: d.cheltuieli?.filter((xid) => !cheltuieliSterse.has(xid)),
+      };
       await put('deconturi', curat);
       return curat;
     }),
@@ -107,6 +117,7 @@ export async function deleteCursa(id: string): Promise<void> {
     curse: state.curse.filter((c) => c.id !== id),
     rezervari: state.rezervari.filter((r) => r.cursaId !== id),
     bilete: state.bilete.filter((b) => b.cursaId !== id),
+    cheltuieli: state.cheltuieli.filter((x) => x.cursaId !== id),
     deconturi,
   });
 }
@@ -168,4 +179,15 @@ export async function deleteLocalitate(id: string): Promise<void> {
   const ids = new Set([id, ...state.localitati.filter((l) => l.mamaId === id).map((l) => l.id)]);
   await Promise.all([...ids].map((x) => remove('localitati', x)));
   update({ localitati: state.localitati.filter((l) => !ids.has(l.id)) });
+}
+
+export async function saveCheltuiala(c: Cheltuiala): Promise<void> {
+  const next = { ...c, modificat: Date.now() };
+  await put('cheltuieli', next);
+  update({ cheltuieli: upsert(state.cheltuieli, next) });
+}
+
+export async function deleteCheltuiala(id: string): Promise<void> {
+  await remove('cheltuieli', id);
+  update({ cheltuieli: state.cheltuieli.filter((c) => c.id !== id) });
 }

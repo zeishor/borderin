@@ -3,7 +3,7 @@ import { incasat } from './format';
 import { zero } from './monede';
 import { incluseInSalariu } from './locale';
 import { pretSpalare, spalariDecontate } from './spalatorie';
-import type { Bilet, Cursa, Cursuri, Decont, Masina, Rezervare, Setari } from './types';
+import type { Bilet, Cheltuiala, Cursa, Cursuri, Decont, Masina, Rezervare, Setari } from './types';
 
 export interface AnalizaCursa {
   cursa: Cursa;
@@ -16,6 +16,9 @@ export interface AnalizaCursa {
   /** Biletele încă nedecontate. */
   bilete: Bilet[];
   spalariToate: number;
+  /** Cheltuielile extra încă nedecontate. */
+  cheltuieli: Cheltuiala[];
+  cheltuieliToate: Cheltuiala[];
   /** Spălările încă nedecontate: câte și cât. */
   spalari: { nr: number; suma: number };
   /** Banii încasați de la clienții cursei și încă nepredați într-un decont, pe monede. */
@@ -31,7 +34,15 @@ export interface AnalizaCursa {
 /** Tot ce ține de decontul unei cursei: suma ei, biletele, spălările și banii încasați la ea. Nu blochează nimic. */
 export function analizaCursa(
   cursa: Cursa,
-  ctx: { rezervari: Rezervare[]; bilete: Bilet[]; deconturi: Decont[]; masini: Masina[]; setari: Setari; curse?: Cursa[] },
+  ctx: {
+    rezervari: Rezervare[];
+    bilete: Bilet[];
+    deconturi: Decont[];
+    masini: Masina[];
+    setari: Setari;
+    curse?: Cursa[];
+    cheltuieli?: Cheltuiala[];
+  },
 ): AnalizaCursa {
   const decontate = new Set(ctx.deconturi.flatMap((d) => d.bilete));
   const intrari = ctx.deconturi.flatMap((d) => (d.curse ?? []).filter((c) => c.cursaId === cursa.id));
@@ -41,6 +52,9 @@ export function analizaCursa(
   const inclusa = ctx.curse ? incluseInSalariu(ctx.curse, ctx.setari.curseLocaleInclusePeLuna).has(cursa.id) : false;
   const bileteToate = ctx.bilete.filter((b) => b.cursaId === cursa.id);
   const bilete = bileteToate.filter((b) => !decontate.has(b.id));
+  const cheltuieliDecontate = new Set(ctx.deconturi.flatMap((d) => d.cheltuieli ?? []));
+  const cheltuieliToate = (ctx.cheltuieli ?? []).filter((x) => x.cursaId === cursa.id);
+  const cheltuieli = cheltuieliToate.filter((x) => !cheltuieliDecontate.has(x.id));
   const spalariToate = cursa.spalari ?? 0;
   const spalariDeja = spalariDecontate(cursa.id, ctx.deconturi);
   const nr = Math.max(0, spalariToate - spalariDeja);
@@ -53,14 +67,16 @@ export function analizaCursa(
   const areBani = Object.values(incasatDeDecontat).some((x) => x > 0);
 
   // Și o cursă fără sumă se decontează dacă s-au încasat bani la ea: se înțelege șoferul cu cine face decontul și setează suma după.
-  const deDecontat = sumaCursa > 0 || bilete.length > 0 || nr > 0 || areBani;
-  const avutDecontate = inDecont || bileteToate.length > bilete.length || spalariDeja > 0;
+  const deDecontat = sumaCursa > 0 || bilete.length > 0 || cheltuieli.length > 0 || nr > 0 || areBani;
+  const avutDecontate = inDecont || bileteToate.length > bilete.length || cheltuieliToate.length > cheltuieli.length || spalariDeja > 0;
   return {
     cursa,
     sumaCursa,
     inclusaInSalariu: inclusa,
     bileteToate,
     bilete,
+    cheltuieli,
+    cheltuieliToate,
     spalariToate,
     spalari: { nr, suma: nr * pret },
     incasat: incasatDeDecontat,
@@ -77,7 +93,7 @@ export function soldCurse(analize: AnalizaCursa[], cursuri: Cursuri, predat?: To
   return calculeazaSold({
     curse: analize.reduce((t, a) => t + a.sumaCursa, 0),
     spalatorii: analize.reduce((t, a) => t + a.spalari.suma, 0),
-    bilete: analize.flatMap((a) => a.bilete),
+    bilete: analize.flatMap((a) => [...a.bilete, ...a.cheltuieli]),
     predat: predat ?? incasatTotal,
     cursuri,
   });

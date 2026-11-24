@@ -139,6 +139,18 @@ export interface Bilet {
   textOcr?: string;
 }
 
+/** Cheltuială extra a șoferului la o cursă (taxă de drum, apă etc.), de decontat odată cu cursa. */
+export interface Cheltuiala {
+  id: string;
+  cursaId: string;
+  creat: number;
+  modificat: number;
+  descriere: string;
+  suma: number;
+  moneda: MonedaBilet;
+  foto?: Blob;
+}
+
 /** Un decont: momentul în care șoferul a predat bani și/sau a decontat bilete la firmă. */
 export interface Decont {
   id: string;
@@ -149,6 +161,8 @@ export interface Decont {
   predat: Record<Moneda, number>;
   /** Biletele decontate cu această ocazie. */
   bilete: string[];
+  /** Cheltuielile extra decontate. */
+  cheltuieli?: string[];
   /** Spălările decontate: câte, din ce cursă, și suma (RON) la prețul din momentul decontului. */
   spalatorii?: { cursaId: string; nr: number; suma: number }[];
   /** Cursele decontate, cu suma (lei) din momentul decontului. */

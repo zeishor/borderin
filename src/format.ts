@@ -1,6 +1,6 @@
 import { MONEDE, SIMBOL, zero } from './monede';
 import { sumeDinText } from './parser';
-import type { Bilet, Cursa, Moneda, MonedaBilet, Plata, Rezervare } from './types';
+import type { Cursa, Moneda, MonedaBilet, Plata, Rezervare } from './types';
 
 export function azi(): string {
   const d = new Date();
@@ -84,7 +84,7 @@ export function fmtSumaBilet(suma: number, moneda: MonedaBilet): string {
 }
 
 /** Totalul cheltuielilor din bilete, separat pe monede. */
-export function textCheltuieli(bilete: Bilet[]): string {
+export function textCheltuieli(bilete: { suma?: number; moneda: MonedaBilet }[]): string {
   const total: Partial<Record<MonedaBilet, number>> = {};
   for (const b of bilete) if (b.suma) total[b.moneda] = (total[b.moneda] ?? 0) + b.suma;
   const parti = (['HUF', 'EUR', 'RON'] as MonedaBilet[]).filter((m) => total[m]).map((m) => fmtSumaBilet(total[m]!, m));

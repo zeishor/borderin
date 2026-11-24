@@ -37,6 +37,9 @@ export function totalBilete(bilete: Bilet[]): Partial<Record<MonedaBilet, number
   return t;
 }
 
+/** Orice cu sumă și monedă de bilet: bilete de parcare, cheltuieli extra. */
+export type SumaMoneda = { suma?: number; moneda: MonedaBilet };
+
 const rotunjeste = (x: number) => Math.round(x * 100) / 100;
 
 /** Cursele cu sumă pentru șofer care nu au intrat încă într-un decont. */
@@ -63,7 +66,7 @@ export interface Sold {
 export function calculeazaSold(p: {
   curse: number;
   spalatorii: number;
-  bilete: Bilet[];
+  bilete: SumaMoneda[];
   predat: Totaluri;
   cursuri: Cursuri;
 }): Sold {
@@ -86,7 +89,7 @@ export function calculeazaSold(p: {
 }
 
 /** Monedele străine folosite într-un decont (predate sau în bilete), pentru care trebuie un curs. */
-export function monedeNecesareCurs(predat: Totaluri, bilete: Bilet[]): (Moneda | MonedaBilet)[] {
+export function monedeNecesareCurs(predat: Totaluri, bilete: SumaMoneda[]): (Moneda | MonedaBilet)[] {
   const folosite = new Set<Moneda | MonedaBilet>();
   for (const m of MONEDE) if (predat[m] > 0) folosite.add(m);
   for (const b of bilete) if (b.suma) folosite.add(b.moneda);

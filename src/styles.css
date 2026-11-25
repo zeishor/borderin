@@ -310,3 +310,13 @@ dialog.modal::backdrop { background: rgb(0 0 0 / .5); }
 .calcul ul { margin: 2px 0 6px; padding-left: 20px; color: var(--muted); }
 .calcul-titlu { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
 .narrow-select { width: 84px; flex: none; }
+
+button.link {
+  background: none;
+  border: 0;
+  padding: 4px 0 0;
+  color: var(--accent, #2563eb);
+  font-size: 0.85rem;
+  text-align: left;
+  text-decoration: underline;
+}

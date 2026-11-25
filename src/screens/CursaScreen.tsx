@@ -4,6 +4,7 @@ import { deleteCheltuiala, deleteCursa, newId, saveBilet, saveCheltuiala, saveCu
 import { arePlataIncasata, fmtMoment, fmtData, fmtSumaBilet, textCheltuieli, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Incasare } from '../incasare';
 import { parseMesaje } from '../parser';
+import { oreSugerate } from '../ore';
 import { aplicaPeCursa, rezervareDinExtras } from '../importa';
 import { Field, Screen } from '../ui';
 import { linkZbor } from '../zbor';
@@ -85,6 +86,7 @@ export function CursaScreen({ id }: { id: string }) {
   const aleBilete = bilete.filter((b) => b.cursaId === id);
   const dus = ale.filter((r) => r.directie === 'dus');
   const retur = ale.filter((r) => r.directie === 'retur');
+  const sugerat = oreSugerate(ale, setari, cursa.destinatie);
   const set = (patch: Partial<typeof cursa>) => saveCursa({ ...cursa, ...patch });
 
   const masina = masini.find((m) => m.id === cursa.masinaId);
@@ -123,7 +125,7 @@ export function CursaScreen({ id }: { id: string }) {
     const rezultat = parseMesaje(adauga);
     const noi = rezultat.rezervari.map((e) => rezervareDinExtras(id, e));
     for (const r of noi) await saveRezervare(r);
-    let actualizata = aplicaPeCursa(cursa!, rezultat);
+    let actualizata = aplicaPeCursa(cursa!, rezultat, [...ale, ...noi], setari);
     // Opriri noi pot schimba suma, dar o sumă scrisă manual nu se atinge.
     if (actualizata.sumaSursa !== SURSA_MANUALA) {
       actualizata = aplicaPret(actualizata, await calculeaza(opririCursa(actualizata, [...ale, ...noi])));
@@ -190,9 +192,19 @@ export function CursaScreen({ id }: { id: string }) {
         </Field>
         <Field label="Plecare din Timișoara">
           <input type="time" value={cursa.plecare ?? ''} onInput={(e) => set({ plecare: e.currentTarget.value || undefined })} />
+          {!cursa.plecare && sugerat.plecare && (
+            <button class="link" onClick={() => set({ plecare: sugerat.plecare })}>
+              Propus din zbor: {sugerat.plecare} · aplică
+            </button>
+          )}
         </Field>
         <Field label="Retur de la">
           <input type="time" value={cursa.retur ?? ''} onInput={(e) => set({ retur: e.currentTarget.value || undefined })} />
+          {!cursa.retur && sugerat.retur && (
+            <button class="link" onClick={() => set({ retur: sugerat.retur })}>
+              Propus din preluare: {sugerat.retur} · aplică
+            </button>
+          )}
         </Field>
       </div>
 

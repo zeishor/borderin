@@ -107,6 +107,12 @@ export interface Setari {
   pragExtraOre: number;
   /** Durata drumului destinație → Timișoara. */
   drumInapoiOre: number;
+  /** Cu câte ore înainte de decolare trebuie să fie pasagerul la aeroport. */
+  oreInainteZbor: number;
+  /** Cu câte ore e Ungaria în urma României (ora zborului e locală, în Ungaria). */
+  diferentaFusOre: number;
+  /** Durata drumului Timișoara → aeroportul de la destinație. */
+  drumDusOre: number;
   /** Cât se decontează pentru o spălare a mașinii mici (până la 4 locuri), în RON. */
   spalatorieMicaRon: number;
   /** Cât se decontează pentru o spălare a mașinii mari (peste 4 locuri), în RON. */

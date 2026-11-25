@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { go } from '../router';
-import { newId, saveCursa, saveRezervare } from '../store';
+import { getState, newId, saveCursa, saveRezervare } from '../store';
 import { azi } from '../format';
 import { parseMesaje } from '../parser';
 import { aplicaPeCursa, rezervareDinExtras } from '../importa';
@@ -22,7 +22,7 @@ export function CursaNoua() {
     const acum = Date.now();
     const id = newId();
     const rezervari = rezultat.rezervari.map((e) => rezervareDinExtras(id, e));
-    let cursa = aplicaPeCursa({ id, creat: acum, modificat: acum, data, destinatie }, rezultat);
+    let cursa = aplicaPeCursa({ id, creat: acum, modificat: acum, data, destinatie }, rezultat, rezervari, getState().setari);
     cursa = aplicaPret(cursa, await calculeaza(opririCursa(cursa, rezervari)));
     await saveCursa(cursa);
     for (const r of rezervari) await saveRezervare(r);

@@ -152,7 +152,34 @@ export function SetariScreen() {
           onInput={(e) => saveSetari({ ...setari, drumInapoiOre: Number(e.currentTarget.value) || 0 })}
         />
       </Field>
-      <p class="muted">Calculul „extra” se adaugă într-o etapă următoare; setările se păstrează de pe acum.</p>
+      <Field label="Pasagerul ajunge la aeroport cu atâtea ore înainte de zbor">
+        <input
+          type="number"
+          min={0}
+          step={0.5}
+          value={setari.oreInainteZbor}
+          onInput={(e) => saveSetari({ ...setari, oreInainteZbor: Number(e.currentTarget.value) || 0 })}
+        />
+      </Field>
+      <Field label="Ungaria e în urma României cu (ore)">
+        <input
+          type="number"
+          min={0}
+          step={1}
+          value={setari.diferentaFusOre}
+          onInput={(e) => saveSetari({ ...setari, diferentaFusOre: Number(e.currentTarget.value) || 0 })}
+        />
+      </Field>
+      <Field label="Durata drumului Timișoara → aeroport (ore)">
+        <input
+          type="number"
+          min={0}
+          step={0.5}
+          value={setari.drumDusOre}
+          onInput={(e) => saveSetari({ ...setari, drumDusOre: Number(e.currentTarget.value) || 0 })}
+        />
+      </Field>
+      <p class="muted">Plecarea se propune din zbor (zbor + diferența de fus − ore înainte − drum); returul, din ora de preluare. Calculul „extra” se adaugă într-o etapă următoare; setările se păstrează de pe acum.</p>
 
       <h2 class="day">Despre</h2>
       <p class="muted">

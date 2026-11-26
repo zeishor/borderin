@@ -302,12 +302,22 @@ function parsePlecare(text: string, baza: string) {
 
 const LOC_CUNOSCUT = /timi[sș]oara|budapest|arad|oradea|belgrad|viena|cluj|sibiu|szeged|debrecen|aeroport/i;
 
+const STRAINATATE = /budapest|viena|belgrad|szeged|debrecen/i;
+/** Antet de la dispecer: „MAINE TUR 27.11.2026", „Retur azi". Întoarce direcția și data scrisă sau relativă. */
+function parseAntet(c: string, trimis: string): { directie: Directie; data?: string } | undefined {
+  const m = norm(c).match(/^(?:(azi|astazi|maine|poimaine)\s+)?(tur|dus|retur)\b(?:\s+(azi|astazi|maine|poimaine))?[\s,:-]*([\d./-]*)$/);
+  if (!m) return undefined;
+  const cand = m[1] ?? m[3];
+  const relativa = cand && adaugaZile(trimis, cand === 'poimaine' ? 2 : cand === 'maine' ? 1 : 0);
+  return { directie: m[2] === 'retur' ? 'retur' : 'dus', data: parseData(m[4]) ?? relativa };
+}
+
 function curataLoc(s: string): string {
   return s.replace(/\baeroport(ul)?\b/gi, '').replace(/\s+/g, ' ').trim() || s.trim();
 }
 
 /** „Oraș preluare - oraș destinație", oriunde într-un rând, cu cuvinte multiple și diferite liniuțe. */
-export function parseRuta(c: string): { directie: Directie; destinatie: string; lasare?: string } | undefined {
+export function parseRuta(c: string): { directie: Directie; destinatie: string; lasare?: string; origine?: string } | undefined {
   const m = c.match(/^([^\d]{3,30}?)\s*(?:->|→|–|—|-)+\s*([^\d]{3,30})$/u);
   if (!m) return undefined;
   const [a, b] = [m[1].trim(), m[2].trim()];
@@ -316,6 +326,8 @@ export function parseRuta(c: string): { directie: Directie; destinatie: string; 
   const timisoara = /timi[sș]oara/i;
   if (timisoara.test(norm(a)) || timisoara.test(a)) return { directie: 'dus', destinatie: curataLoc(b) };
   if (timisoara.test(b)) return { directie: 'retur', destinatie: curataLoc(a) };
+  // Fără Timișoara: spre străinătate e dus („Pecica-Budapesta"), din străinătate e retur.
+  if (STRAINATATE.test(b) && !STRAINATATE.test(a)) return { directie: 'dus', destinatie: curataLoc(b), origine: curataLoc(a) };
   return { directie: 'retur', destinatie: curataLoc(a), lasare: curataLoc(b) };
 }
 
@@ -356,6 +368,21 @@ function opriri(nota: string, locuri: string | undefined): string[] | undefined 
     rezultat.push(`${adresa.join(', ')} (${nume})`);
   }
   return rezultat.length ? rezultat : undefined;
+}
+
+/**
+ * „2 pax (07…) preluare de pe str. A si 1 pax (07…) preluare de pe str. B" → „Oraș, str. A (2 pax) + Oraș, str. B (1 pax)".
+ * Orașul e prima parte din celula de preluare/lăsare.
+ */
+function opririPeGrupe(nota: string, locuri: string | undefined): string | undefined {
+  const grupe = [
+    ...nota.matchAll(/(\d+)\s*pax\s*(?:\([\d\s+.]*\))?\s*(?:preluare|l[aă]sare)\s+(?:de\s+)?(?:pe|din|la)?\s*(.+?)(?=\s+(?:si|și)\s+\d+\s*pax|[;|]|$)/gi),
+  ];
+  if (grupe.length < 2) return undefined;
+  const oras = locuri?.split(',')[0].trim();
+  return grupe
+    .map(([, pax, adresa]) => `${oras ? `${oras}, ` : ''}${curataAdresa(adresa)} (${pax} pax)`)
+    .join(' + ');
 }
 
 /** Cod de zbor în context sigur (după oră sau după „zbor"): 2 caractere IATA + 1–4 cifre, ex. FR5249, W6 2289. */
@@ -412,7 +439,9 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
   let lasare: string | undefined;
   let plata: Plata | undefined;
   const celulePax: string[] = [];
-  let destinatie: string | undefined = ruta?.destinatie;
+  let destinatie: string | undefined = ruta && titluDacaMajuscule(ruta.destinatie);
+  const idxOra = cells.findIndex((c) => /^\d{1,2}[:;.]\d{2}\b/.test(c) && !parseData(c));
+  let idxPlata = -1;
 
   const numeFaraTelefon = cells.slice(0, idxTel).some((c, i) => c && i !== idxRuta && !esteMetadata(c));
   for (const [i, t] of extrageTelefoane(cells[idxTel]).entries()) {
@@ -434,12 +463,10 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
       return;
     }
 
-    const cuvant = c.match(/^(retur|dus)\b\s*(.*)$/i);
-    if (cuvant && c.length < 25 && /^(azi|ast[aă]zi|m[aâ]ine|poim[aâ]ine)?$/i.test(cuvant[2].trim())) {
-      directieCuvant = cuvant[1].toLowerCase() as Directie;
-      if (/poim/i.test(cuvant[2])) dataRelativa = adaugaZile(trimis, 2);
-      else if (/m[aâ]ine/i.test(cuvant[2])) dataRelativa = adaugaZile(trimis, 1);
-      else if (cuvant[2].trim()) dataRelativa = trimis;
+    const antet = parseAntet(c, trimis);
+    if (antet) {
+      directieCuvant = antet.directie;
+      dataRelativa = antet.data;
       return;
     }
 
@@ -458,6 +485,7 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
       // O celulă doar cu restanță: prețul poate veni în altă celulă; restanța se adaugă la sfârșit din textul întreg.
       if (p.suma === undefined && p.extra?.length && !p.metoda && p.stare !== 'achitat') return;
       plata = p;
+      idxPlata = i;
       return;
     }
 
@@ -484,17 +512,35 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
       return;
     }
 
-    if (plata) eticheta.push(c);
-    else if (ora) lasare ??= curataAdresa(c);
+    // „Piața UTA, blocul U6," + „ARAD": adresa ruptă pe două celule.
+    // Localitatea rutei trece în față („Arad, Piața …"), ca la restul adreselor.
+    if (preluare?.endsWith(',')) {
+      preluare =
+        ruta?.origine && norm(c) === norm(ruta.origine)
+          ? `${titluDacaMajuscule(c)}, ${preluare.slice(0, -1)}`
+          : `${preluare} ${c}`;
+    }
+    // După preț urmează etichete („PRIVAT"), dar nu când prețul e scris înaintea telefonului.
+    else if (plata && idxPlata > idxTel) eticheta.push(c);
+    // După oră urmează lăsarea. Când ora e înaintea telefonului (mesaj pe rânduri), adresa e a clientului:
+    // preluarea la dus, lăsarea la retur.
+    else if (ora && (idxOra > idxTel || directieCuvant === 'retur')) lasare ??= curataAdresa(c);
     else if (!preluare) preluare = curataAdresa(c);
     else note.push(c);
   });
 
   const directie = ruta?.directie ?? directieCuvant;
-  if (!lasare && ruta?.lasare) lasare = ruta.lasare;
+  if (!lasare && ruta?.lasare) lasare = titluDacaMajuscule(ruta.lasare);
+  preluare = preluare?.replace(/,$/, '');
   if (!destinatie && lasare) destinatie = lasare.split(',')[0].trim();
 
   for (const c of celulePax) {
+    const grupe = opririPeGrupe(c, directie === 'retur' ? lasare : preluare);
+    if (grupe) {
+      if (directie === 'retur') lasare = grupe;
+      else preluare = grupe;
+      break;
+    }
     const stop = opriri(c, directie === 'retur' ? lasare : preluare);
     if (!stop) continue;
     if (directie === 'retur') lasare = stop.join(' + ');
@@ -511,7 +557,7 @@ function parseRezervare(cells: string[], original: string, trimis: string): Reze
   if (ruta && destinatie) {
     const aeroport = `Aeroport ${titluDacaMajuscule(destinatie)}`;
     if (directie === 'dus') {
-      preluare ??= 'Timisoara';
+      preluare ??= ruta.origine ? titluDacaMajuscule(ruta.origine) : 'Timisoara';
       lasare ??= aeroport;
     } else {
       preluare ??= aeroport;
@@ -548,9 +594,50 @@ function esteMetadata(c: string): boolean {
     esteCelulaPlata(c) ||
     !!parseRuta(c) ||
     /^(retur|dus)\b/i.test(c) ||
+    !!parseAntet(c, '2000-01-01') ||
     /pax|bagaj|\btel\b/i.test(c) ||
     c.length > 60
   );
+}
+
+const LOCALITATI_DIN_JUR =
+  /\b(timi[sș]oara|ghiroda|giroc|chi[sș]oda|dumbr[aă]vi[tț]a|mo[sș]ni[tț]a|s[aă]c[aă]laz|[sș]ag|s[aâ]nandrei|s[aâ]nmihaiu|remetea|utvin|buzia[sș]|lugoj|jimbolia|arad|pecica|re[sș]i[tț]a)\b/i;
+
+/** „Tur dec 10 20 1 per Nume Prenume Localitate str … ac 40 eu. 07…": totul pe un rând, fără coloane. */
+function parseCompact(text: string): Partial<RezervareExtrasa> | undefined {
+  const cap = text.match(/^(tur|dus|retur)\b/i);
+  const pax = text.match(/\b(\d+)\s*(?:pax|pers(?:oane|oana|\.)?|per)(?![a-zăâîșț])\.?/i);
+  if (!cap || !pax) return undefined;
+  const directie: Directie = cap[1].toLowerCase() === 'retur' ? 'retur' : 'dus';
+  const ora = text.match(/\b(?:dec(?:olare)?|at(?:erizare)?|ora)\b\.?\s*(\d{1,2})[\s:;.,](\d{2})\b/i);
+
+  // După „N per": nume, localitate, adresă, apoi prețul sau telefonul.
+  const rest = text
+    .slice(pax.index! + pax[0].length)
+    .split(/\s+(?:ac|achit[aă]?|achitat|cash|plat[aă])(?![a-zăâîșț])|\s*\d+\s*(?=(?:euro|eur|eu|lei|ron)(?![a-z]))|\s*(?:\+|00)?\d{9,}/i)[0]
+    .trim();
+  const strada = rest.search(STRADA);
+  const faraStrada = (strada >= 0 ? rest.slice(0, strada) : rest).trim();
+  const localitate = faraStrada.match(LOCALITATI_DIN_JUR);
+  // Fără localitate cunoscută, numele sunt primele două cuvinte.
+  const lungime = localitate ? localitate.index! : faraStrada.split(/\s+/).slice(0, 2).join(' ').length;
+  const nume = rest.slice(0, lungime).replace(/[\s,;-]+$/, '');
+  const loc = rest.slice(lungime).replace(/^[\s,;-]+|[\s,;-]+$/g, '');
+  const adresa = loc.replace(new RegExp(`^(${LOCALITATI_DIN_JUR.source})\\s+(?=\\S)`, 'i'), '$1, ').replace(/,\s*,/, ',');
+
+  const { extra } = analizeazaSume(text);
+  const plata = parsePlata(text);
+  const nota = text.match(/(?:(?:ac|achit[aă]?|achitat|cash)\s+)?\d+(?:[.,]\d+)?\s*(?:de\s+)?(?:euro|eur|eu|lei|ron)(?![a-z])/i);
+
+  return {
+    plata: { ...plata, notaPret: nota?.[0] ?? plata.notaPret, extra: extra.length ? extra : undefined },
+    nume: titluDacaMajuscule(nume),
+    pasageri: Number(pax[1]),
+    ora: ora ? normOra(ora[1], ora[2]) : undefined,
+    directie,
+    preluare: directie === 'dus' ? adresa || undefined : undefined,
+    lasare: directie === 'retur' ? adresa || undefined : undefined,
+  };
 }
 
 /** Rezervare dintr-un rând fără coloane (text liber) care conține un telefon. */
@@ -568,6 +655,7 @@ function parseLiber(text: string): RezervareExtrasa | undefined {
     observatii: text,
     plata: esteCelulaPlata(text) ? parsePlata(text) : { stare: 'de_incasat', moneda: 'EUR' },
     textOriginal: text,
+    ...parseCompact(text),
   };
 }
 

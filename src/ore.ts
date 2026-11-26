@@ -3,6 +3,8 @@ import type { Rezervare, Setari } from './types';
 
 type SetariOre = Pick<Setari, 'oreInainteZbor' | 'drumDusOre' | 'diferentaFusOre'>;
 
+/** „dec 10 20", „decolare": ora scrisă e a zborului, chiar fără cod. */
+const DECOLARE = /\bdec(olare)?\b\.?\s*(\d|$)/i;
 const IN_UNGARIA = /budapest|ungaria|hungary|debrecen|szeged|pecs|gyor|miskolc/;
 
 function minute(hhmm: string): number {
@@ -21,7 +23,7 @@ function hhmm(min: number): string {
  * Doar rezervările cu zbor își dau ora ca decolare; altfel „ora" poate fi o preluare și nu se atinge.
  */
 export function oreSugerate(rezervari: Rezervare[], setari: SetariOre, destinatie = ''): { plecare?: string; retur?: string } {
-  const zboruri = rezervari.filter((r) => r.directie === 'dus' && r.ora && (r.zbor || r.orasZbor)).map((r) => minute(r.ora!));
+  const zboruri = rezervari.filter((r) => r.directie === 'dus' && r.ora && (r.zbor || r.orasZbor || DECOLARE.test(r.textOriginal ?? ''))).map((r) => minute(r.ora!));
   const preluari = rezervari.filter((r) => r.directie === 'retur' && r.ora).map((r) => minute(r.ora!));
   const rezultat: { plecare?: string; retur?: string } = {};
   if (zboruri.length) {

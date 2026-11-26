@@ -421,3 +421,49 @@ describe('sume extra (restanțe)', () => {
     expect(r.plata.extra?.map((x) => x.suma)).toEqual([50]);
   });
 });
+
+describe('formate de la dispecer: antet, rând compact, opriri pe grupe', () => {
+  const azi = '2026-11-26';
+  const unu = (text: string) => parseMesaje(text, azi).rezervari[0];
+
+  it('rând compact fără coloane', () => {
+    const r = unu('[26/11, 14:02] Transport: Tur dec 10 20 1 per Popa Maria Ghiroda str Exemplu nr 1 ac 40 eu.  0700000101');
+    expect(r).toMatchObject({
+      nume: 'Popa Maria',
+      pasageri: 1,
+      directie: 'dus',
+      ora: '10:20',
+      preluare: 'Ghiroda, str Exemplu nr 1',
+      plata: { stare: 'de_incasat', suma: 40, moneda: 'EUR', notaPret: 'ac 40 eu' },
+    });
+    expect(r.telefoane[0].numar).toBe('0700000101');
+  });
+
+  it('mesaj pe rânduri cu antet „MAINE TUR" și adresa după telefon', () => {
+    const r = unu(
+      '[26/11, 17:33] Transport: MAINE TUR  27.11.2026\nARAD- BUDAPESTA\nPLATA LA MASINA 220 LEI \n1 pax \tPopa Ion-Dan\t\n10:30\t0700000102\t\nPiața Test, blocul A1,\tARAD',
+    );
+    expect(r).toMatchObject({
+      nume: 'Popa Ion-Dan',
+      data: '2026-11-27',
+      directie: 'dus',
+      destinatie: 'Budapesta',
+      ora: '10:30',
+      preluare: 'Arad, Piața Test, blocul A1',
+      lasare: 'Aeroport Budapesta',
+      plata: { suma: 220, moneda: 'RON' },
+    });
+  });
+
+  it('localitate - Budapesta e dus, nu retur', () => {
+    expect(parseRuta('Pecica-Budapesta')).toEqual({ directie: 'dus', destinatie: 'Budapesta', origine: 'Pecica' });
+  });
+
+  it('două grupe de pasageri cu adrese diferite', () => {
+    const r = unu(
+      t('Ana', 'Prob', '0700000103', '2026-11-27', 'Timisoara-Budapesta', 'Timisoara , Str Unu 1', ' 3 Pax : din care 2 pax (0700000103) preluare de pe str. Unu 1 si 1 pax (0700000104) preluare de pe str. Doi 2', '10:20 , FR 1018', 'Aeroport Budapesta', 'Achitat'),
+    );
+    expect(r.preluare).toBe('Timisoara, str. Unu 1 (2 pax) + Timisoara, str. Doi 2 (1 pax)');
+    expect(r.pasageri).toBe(3);
+  });
+});

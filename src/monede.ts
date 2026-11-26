@@ -7,7 +7,7 @@ export const SIMBOL: Record<Moneda, string> = { EUR: '€', RON: 'lei', GBP: '£
 
 /** Cuvintele/simbolurile recunoscute în mesaje, ca alternativă de regex. */
 export const CUVINTE_MONEDA =
-  'euro|eur|€|lei|ron|lire(?:\\s+sterline)?|lira|gbp|£|franci(?:\\s+elve[tț]ieni)?|franc|chf';
+  'euro|eur|eu(?![a-z])|€|lei|ron|lire(?:\\s+sterline)?|lira|gbp|£|franci(?:\\s+elve[tț]ieni)?|franc|chf';
 
 /** „lei" → RON, „lire"/„£" → GBP, „franci"/„CHF" → CHF, altfel EUR. */
 export function monedaDinCuvant(cuvant: string): Moneda {

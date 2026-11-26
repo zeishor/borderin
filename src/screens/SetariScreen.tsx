@@ -133,6 +133,50 @@ export function SetariScreen() {
       </Field>
       <p class="muted">Se deschide ca link; dacă aplicația e instalată, telefonul o poate deschide direct pe ea.</p>
 
+      <h2 class="day">Plan de preluare</h2>
+      <Field label="Punct de plecare (adresa ta)">
+        <input
+          value={setari.adresaPornire}
+          placeholder="Timisoara, Str. Exemplu 1"
+          onChange={(e) => saveSetari({ ...setari, adresaPornire: e.currentTarget.value.trim() })}
+        />
+      </Field>
+      <Field label="Granița (localitatea punctului de trecere)">
+        <input value={setari.punctGranita} onChange={(e) => saveSetari({ ...setari, punctGranita: e.currentTarget.value.trim() })} />
+      </Field>
+      <Field label="Minute la fiecare preluare">
+        <input
+          type="number"
+          min={0}
+          value={setari.minutePreluare}
+          onInput={(e) => saveSetari({ ...setari, minutePreluare: Number(e.currentTarget.value) || 0 })}
+        />
+      </Field>
+      <Field label="Minute de așteptare la graniță">
+        <input
+          type="number"
+          min={0}
+          value={setari.minuteGranita}
+          onInput={(e) => saveSetari({ ...setari, minuteGranita: Number(e.currentTarget.value) || 0 })}
+        />
+      </Field>
+      <Field label="Cheia openrouteservice (gratuită)">
+        <input
+          type="password"
+          autocomplete="off"
+          value={setari.orsCheie}
+          onChange={(e) => saveSetari({ ...setari, orsCheie: e.currentTarget.value.trim() })}
+        />
+      </Field>
+      <p class="muted">
+        Cheia se ia de pe{' '}
+        <a href="https://account.heigit.org/" target="_blank" rel="noopener">
+          account.heigit.org
+        </a>
+        . Rămâne pe telefon și nu intră în backup. Fără cheie, duratele sunt doar estimate. La calcularea rutei se trimit la
+        openrouteservice numai adresele.
+      </p>
+
       <h2 class="day">Cursă „extra”</h2>
       <Field label="Prag (ore, durata totală a cursei)">
         <input
@@ -183,7 +227,7 @@ export function SetariScreen() {
 
       <h2 class="day">Despre</h2>
       <p class="muted">
-        Baza de localități: © GeoNames (geonames.org), licență{' '}
+        Rute: © openrouteservice.org (HeiGIT), date © OpenStreetMap. Baza de localități: © GeoNames (geonames.org), licență{' '}
         <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">
           CC BY 4.0
         </a>

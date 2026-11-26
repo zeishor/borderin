@@ -8,6 +8,7 @@ import { SetariScreen } from './screens/SetariScreen';
 import { BiletScreen } from './screens/BiletScreen';
 import { DecontScreen } from './screens/DecontScreen';
 import { ScanScreen } from './screens/ScanScreen';
+import { PlanScreen } from './screens/PlanScreen';
 
 export function App() {
   useStore();
@@ -20,6 +21,8 @@ export function App() {
   if (route === '/setari') return <SetariScreen />;
   const cursa = route.match(/^\/cursa\/(.+)$/);
   if (cursa) return <CursaScreen id={cursa[1]} />;
+  const plan = route.match(/^\/plan\/(.+)$/);
+  if (plan) return <PlanScreen id={plan[1]} />;
   const scan = route.match(/^\/scaneaza\/(.+)$/);
   if (scan) return <ScanScreen cursaId={scan[1]} />;
   const bilet = route.match(/^\/bilet\/(.+)$/);

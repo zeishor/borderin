@@ -3,7 +3,7 @@ import { initStore } from './store';
 
 const FORMAT = 'borderin-backup';
 
-type Inreg = { id: string; foto?: Blob | string };
+type Inreg = { id: string; foto?: Blob | string; orsCheie?: string };
 type Fisier = { format: typeof FORMAT; versiune: 1; exportat: string; date: Record<string, Inreg[]> };
 
 function inBase64(b: Blob): Promise<string> {
@@ -27,6 +27,8 @@ export async function exporta(): Promise<Blob> {
     date[s] = await Promise.all(
       lista.map(async (x) => (x.foto instanceof Blob ? { ...x, foto: await inBase64(x.foto) } : x)),
     );
+    // Cheia serviciului de rute e secretă: fișierul de backup poate ajunge la altcineva.
+    if (s === 'setari') date[s] = date[s].map(({ orsCheie: _, ...x }) => x);
   }
   const fisier: Fisier = { format: FORMAT, versiune: 1, exportat: new Date().toISOString(), date };
   return new Blob([JSON.stringify(fisier)], { type: 'application/json' });
@@ -63,7 +65,12 @@ export async function importa(f: Fisier): Promise<number> {
   let n = 0;
   for (const s of STORES) {
     for (const x of f.date[s] ?? []) {
-      const val = typeof x.foto === 'string' ? { ...x, foto: await dinBase64(x.foto) } : x;
+      let val = typeof x.foto === 'string' ? { ...x, foto: await dinBase64(x.foto) } : x;
+      if (s === 'setari') {
+        // Backup-ul nu conține cheia de rute; o păstrez pe cea de pe telefon.
+        const veche = (await getAll<Inreg>('setari')).find((y) => y.id === val.id);
+        if (veche?.orsCheie) val = { orsCheie: veche.orsCheie, ...val };
+      }
       await put(s as StoreName, val);
       n++;
     }

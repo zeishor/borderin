@@ -60,6 +60,37 @@ export interface Masina {
   locuri: number;
 }
 
+export interface Punct {
+  lat: number;
+  lon: number;
+}
+
+export interface OprirePlan {
+  /** Adresa normalizată; leagă oprirea de duratele din plan. */
+  cheie: string;
+  adresa: string;
+  nume: string[];
+  telefon?: string;
+  pasageri: number;
+  punct?: Punct;
+  /** Punctul e doar centrul localității sau o potrivire nesigură. */
+  aprox?: boolean;
+}
+
+/** Planul de preluare al unei curse de dus. Opririle sunt în ordinea în care se fac. */
+export interface PlanPreluare {
+  opriri: OprirePlan[];
+  /** Minute între puncte, cheie „de>la". */
+  durate: Record<string, number>;
+  /** Minute scrise de șofer; au prioritate. */
+  corectii: Record<string, number>;
+  /** HH:MM, când vrei să ieși din țară. Lipsă = calculată din primul zbor. */
+  iesire?: string;
+  /** Duratele sunt estimate din distanțe, fără serviciul de rute. */
+  estimat: boolean;
+  startAprox?: boolean;
+}
+
 export interface Cursa {
   id: string;
   creat: number;
@@ -73,6 +104,7 @@ export interface Cursa {
   /** HH:MM, ora retur de la destinație. */
   retur?: string;
   note?: string;
+  plan?: PlanPreluare;
   /** De câte ori a fost spălată mașina în această cursă. */
   spalari?: number;
   /** Suma pentru șofer, în lei: din lista de prețuri sau scrisă manual. */
@@ -113,6 +145,16 @@ export interface Setari {
   diferentaFusOre: number;
   /** Durata drumului Timișoara → aeroportul de la destinație. */
   drumDusOre: number;
+  /** Adresa de unde pleci. */
+  adresaPornire: string;
+  /** Localitatea punctului de trecere a graniței. */
+  punctGranita: string;
+  /** Minute petrecute la fiecare preluare. */
+  minutePreluare: number;
+  /** Minute de așteptare la graniță. */
+  minuteGranita: number;
+  /** Cheia gratuită openrouteservice. Rămâne pe telefon (nu intră în backup). */
+  orsCheie: string;
   /** Cât se decontează pentru o spălare a mașinii mici (până la 4 locuri), în RON. */
   spalatorieMicaRon: number;
   /** Cât se decontează pentru o spălare a mașinii mari (peste 4 locuri), în RON. */

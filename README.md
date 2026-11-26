@@ -93,6 +93,10 @@ Mesajele reale conțin nume și telefoane. Exemplele pentru teste se pun în `sa
 
 Ecranul „Decont" (💼 din lista de curse): șoferul alege când merge la firmă. Un decont înregistrează banii predați (EUR/RON, parțial sau tot) și biletele decontate (toate odată sau alese). Soldul „de predat" = încasat − predat, pe monede; biletele decontate dispar din „nedecontate". Un decont se poate anula, iar soldurile revin. Conversia dintre monede (bilete în HUF, bani în EUR/RON) nu se face în aplicație.
 
+## Plan de preluare
+
+Pe o cursă de dus spre Ungaria, „Plan de preluare" ordonează adresele de preluare și calculează înapoi, de la ora ieșirii din țară (sau din primul zbor), când pleci și la ce oră ajungi la fiecare client. Duratele vin din openrouteservice (`api.heigit.org`, cheie gratuită pusă în Setări, ținută doar pe telefon); fără cheie sunt estimate din distanțe. Orice durată se corectează manual, ordinea se mută, iar fiecare client poate fi anunțat pe WhatsApp. Se trimit la serviciu numai adresele. Nu există trafic în timp real: ruta se verifică în Google Maps.
+
 ## Prețuri, curs valutar și decontul net
 
 Firma plătește doar în lei. În Setări → „Prețuri și salariu" șoferul pune salariul de bază (nu se decontează), sumele de spălătorie (mașină mică/mare) și localitățile mamă cu suma pe cursă, plus limitrofele lor. Cursa ia suma celei mai scumpe opriri; la o oprire fără preț apare un popup care întreabă localitatea mamă (se întreabă o singură dată). În Setări → „Curs valutar" se scriu cursurile (1 EUR = x lei etc.). Decontul e net, în lei: ce ai de luat (curse, spălătorie, bilete la curs) minus valuta predată la curs → „de primit" sau „de predat". Rezumatul lunii din ecranul Decont adună salariul de bază și cursele din lună.

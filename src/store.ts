@@ -14,7 +14,7 @@ interface State {
 }
 
 const SETARI_ID = 'setari';
-const SETARI_IMPLICITE: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5, oreInainteZbor: 2, drumDusOre: 3, diferentaFusOre: 1, spalatorieMicaRon: 0, spalatorieMareRon: 0, cursuri: {}, salariuBazaRon: 0, curseLocaleInclusePeLuna: 0 };
+const SETARI_IMPLICITE: Setari = { pragExtraOre: 16, drumInapoiOre: 4.5, oreInainteZbor: 2, drumDusOre: 3, diferentaFusOre: 1, spalatorieMicaRon: 0, spalatorieMareRon: 0, cursuri: {}, salariuBazaRon: 0, curseLocaleInclusePeLuna: 0, adresaPornire: '', punctGranita: 'Nadlac', minutePreluare: 5, minuteGranita: 20, orsCheie: '' };
 
 let state: State = { curse: [], rezervari: [], masini: [], setari: SETARI_IMPLICITE, bilete: [], deconturi: [], localitati: [], cheltuieli: [] };
 const listeners = new Set<() => void>();
@@ -48,20 +48,8 @@ export async function initStore(): Promise<void> {
     deconturi,
     localitati,
     cheltuieli,
-    setari: salvate
-      ? {
-          pragExtraOre: salvate.pragExtraOre,
-          drumInapoiOre: salvate.drumInapoiOre,
-          oreInainteZbor: salvate.oreInainteZbor ?? 2,
-          drumDusOre: salvate.drumDusOre ?? 3,
-          diferentaFusOre: salvate.diferentaFusOre ?? 1,
-          spalatorieMicaRon: salvate.spalatorieMicaRon ?? 0,
-          spalatorieMareRon: salvate.spalatorieMareRon ?? 0,
-          cursuri: salvate.cursuri ?? {},
-          salariuBazaRon: salvate.salariuBazaRon ?? 0,
-          curseLocaleInclusePeLuna: salvate.curseLocaleInclusePeLuna ?? 0,
-        }
-      : SETARI_IMPLICITE,
+    // Setările salvate de versiuni mai vechi primesc valorile implicite pentru câmpurile noi.
+    setari: { ...SETARI_IMPLICITE, ...salvate },
   });
 }
 

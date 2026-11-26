@@ -4,14 +4,14 @@ import { deleteCheltuiala, deleteCursa, newId, saveBilet, saveCheltuiala, saveCu
 import { arePlataIncasata, fmtMoment, fmtData, fmtSumaBilet, textCheltuieli, textDeIncasat, textIncasat, titluCursa, totalPasageri } from '../format';
 import { Incasare } from '../incasare';
 import { parseMesaje } from '../parser';
-import { oreSugerate } from '../ore';
+import { IN_UNGARIA, oreSugerate } from '../ore';
 import { aplicaPeCursa, rezervareDinExtras } from '../importa';
 import { Field, Screen } from '../ui';
 import { linkZbor } from '../zbor';
 import { NavButoane } from '../navbuton';
 import { traseu } from '../traseu';
 import { useCerePret } from '../cerepret';
-import { aplicaPret, opririCursa, SURSA_MANUALA } from '../preturi';
+import { aplicaPret, norm, opririCursa, SURSA_MANUALA } from '../preturi';
 import { pretSpalare, spalariDecontate } from '../spalatorie';
 import { analizaCursa, soldCurse } from '../decontcursa';
 import { textSold } from './DecontScreen';
@@ -217,6 +217,12 @@ export function CursaScreen({ id }: { id: string }) {
           <span>Încasat (de predat firmei)</span>
           <strong>{textIncasat(ale)}</strong>
         </div>
+      )}
+
+      {dus.some((r) => r.preluare) && IN_UNGARIA.test(norm(cursa.destinatie)) && (
+        <button class="primary" onClick={() => go(`/plan/${id}`)}>
+          🗺 Plan de preluare
+        </button>
       )}
 
       <Sectiune titlu={`Dus: Timișoara → ${cursa.destinatie || '?'}`} lista={dus} />

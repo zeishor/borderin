@@ -39,7 +39,7 @@ export function stari(curse: Cursa[], setari: Setari, acum: number): Map<string,
   let urmatoarea: { id: string; start: number } | undefined;
   for (const c of curse) {
     const { start, sfarsit } = interval(c, setari);
-    if (acum > sfarsit) rezultat.set(c.id, 'terminata');
+    if (c.inchisa || acum > sfarsit) rezultat.set(c.id, 'terminata');
     else if (acum >= start) rezultat.set(c.id, 'in-curs');
     else {
       rezultat.set(c.id, 'viitoare');

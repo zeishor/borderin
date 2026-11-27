@@ -31,6 +31,14 @@ describe('stari', () => {
     expect(stari(curse, setari, la('2026-11-19', '23:00')).get('a')).toBe('in-curs');
     expect(stari(curse, setari, la('2026-11-20', '00:01')).get('a')).toBe('terminata');
   });
+  it('închisă manual: terminată, iar „următoarea" trece la alta', () => {
+    const curse = [
+      { ...c('a', '2026-11-19', '08:00', '16:00'), inchisa: 1 },
+      { ...c('b', '2026-11-20', '08:00'), inchisa: 1 },
+      c('d', '2026-11-22', '09:00'),
+    ];
+    expect([...stari(curse, setari, la('2026-11-19', '10:00')).values()]).toEqual(['terminata', 'terminata', 'urmatoarea']);
+  });
   it('fără curse viitoare nu există „următoarea"', () => {
     const s = stari([c('a', '2026-11-01', '08:00', '16:00')], setari, la('2026-11-19', '10:00'));
     expect([...s.values()]).toEqual(['terminata']);

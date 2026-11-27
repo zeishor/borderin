@@ -5,6 +5,7 @@ import { arePlataIncasata, fmtMoment, fmtData, fmtSumaBilet, textCheltuieli, tex
 import { Incasare } from '../incasare';
 import { parseMesaje } from '../parser';
 import { IN_UNGARIA, oreSugerate } from '../ore';
+import { stari } from '../stare';
 import { aplicaPeCursa, rezervareDinExtras } from '../importa';
 import { Field, Screen } from '../ui';
 import { linkZbor } from '../zbor';
@@ -156,6 +157,20 @@ export function CursaScreen({ id }: { id: string }) {
     <Screen title={titluCursa(cursa)} backTo="/">
       <p class="muted">{fmtData(cursa.data)}</p>
       <p class="muted">{traseu(cursa, ale).join(' → ')}</p>
+
+      {cursa.inchisa ? (
+        <div class="row">
+          <span class="grow muted">✓ Cursă închisă manual.</span>
+          <button onClick={() => set({ inchisa: undefined })}>Redeschide</button>
+        </div>
+      ) : (
+        // O cursă deja trecută de ora estimată nu mai are ce închide.
+        stari([cursa], setari, Date.now()).get(id) !== 'terminata' && (
+          <button class="primary" onClick={() => confirm('Închid cursa? Trece la „Terminate”.') && set({ inchisa: Date.now() })}>
+            ✓ Închide cursa
+          </button>
+        )
+      )}
 
       <div class="grid">
         <Field label="Suma pentru șofer (lei)">

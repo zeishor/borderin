@@ -108,6 +108,8 @@ export interface Cursa {
   retur?: string;
   note?: string;
   plan?: PlanPreluare;
+  /** Când a închis șoferul cursa de mână (ms), ex. s-a întors gol. Lipsă = starea se deduce din ore. */
+  inchisa?: number;
   /** De câte ori a fost spălată mașina în această cursă. */
   spalari?: number;
   /** Suma pentru șofer, în lei: din lista de prețuri sau scrisă manual. */

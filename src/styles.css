@@ -329,3 +329,4 @@ button.link {
 .chip.aprox, .aviz { background: var(--warn-soft); color: var(--warn); }
 .chip.aprox { align-self: flex-start; }
 .aviz { border-radius: 10px; padding: 8px 12px; }
+.gasit { font-size: .8rem; }

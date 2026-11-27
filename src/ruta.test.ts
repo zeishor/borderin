@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { rezervareNoua } from './importa';
 import type { Loc } from './localitati';
 import {
-  AEROPORT, GRANITA, START, calculeazaOrar, cheiePereche, interogare, localitateDin, opririDinRezervari, oraDin, ordineOptima,
+  AEROPORT, GRANITA, START, calculeazaOrar, cheiePereche, interogare, localitateDin, opririDinRezervari, centruLocalitate, oraDin, ordineOptima, interogari, stradaSiNumar,
 } from './ruta';
+import { alegeRezultat } from './ors';
 import type { PlanPreluare } from './types';
 
 const loc = (nume: string): Loc => ({ nume, ascii: nume, judet: '', lat: 45, lon: 21, pop: 1 });
@@ -26,6 +27,44 @@ describe('opriri', () => {
     expect(localitateDin('Pecica str. 505 nr 6', baza)).toBe('Pecica');
     expect(localitateDin('Str. Exemplu 4, Ghiroda', baza)).toBe('Ghiroda');
     expect(localitateDin('str. Exemplu 4', baza)).toBe('Timisoara');
+  });
+  it('strada și numărul, fără „nr.", scară sau observații', () => {
+    const s = (a: string, l = 'Timisoara') => stradaSiNumar(a, l);
+    expect(s('Timisoara, Str. Exemplu Unu nr. 26')).toEqual({ strada: 'Strada Exemplu Unu', numar: '26' });
+    expect(s('Timisoara, Str. Exemplu, nr. 7, Sc. B')).toEqual({ strada: 'Strada Exemplu', numar: '7' });
+    expect(s('Timisoara, str. Test 37 (colt cu magazinul)')).toEqual({ strada: 'Strada Test', numar: '37' });
+    expect(s('Pecica str. 505 nr 6', 'Pecica')).toEqual({ strada: 'Strada 505', numar: '6' });
+    expect(s('Arad, Calea Exemplu 5', 'Arad')).toEqual({ strada: 'Calea Exemplu', numar: '5' });
+    expect(s('Timisoara, Grigore Exemplu 172, bl. A3, ap. 12')).toEqual({ strada: 'Strada Grigore Exemplu', numar: '172' });
+    expect(s('Ghiroda, str Exemplu nr 1', 'Ghiroda')).toEqual({ strada: 'Strada Exemplu', numar: '1' });
+  });
+  it('variantele de căutare', () => {
+    expect(interogari('Timisoara, Str. Exemplu nr. 7, Sc. B', 'Timisoara')).toEqual([
+      'Strada Exemplu 7, Timisoara',
+      'Exemplu 7, Timisoara',
+      'Strada Exemplu, Timisoara',
+    ]);
+  });
+  it('localitate urmată de număr', () => {
+    expect(localitateDin('Ghiroda 56, statia 369', baza)).toBe('Ghiroda');
+    expect(interogari('Ghiroda 56, statia 369', 'Ghiroda')).toEqual(['Ghiroda 56']);
+  });
+  it('alege strada cerută, nu centrul orașului sau altă stradă', () => {
+    const f = (layer: string, label: string) => ({ geometry: { coordinates: [21, 45] }, properties: { layer, label, locality: 'Timişoara' } });
+    const oras = f('locality', 'Timişoara, Romania');
+    expect(alegeRezultat([oras, f('street', 'Strada Altceva, Timişoara')], 'Timisoara', 'Strada Exemplu')?.precis).toBe(false);
+    expect(
+      alegeRezultat([oras, f('street', 'Strada Exemplu, Timişoara'), f('address', 'Strada Exemplu 7, Timişoara')], 'Timisoara', 'Strada Exemplu'),
+    ).toMatchObject({ precis: true, eticheta: 'Strada Exemplu 7, Timişoara' });
+  });
+  it('o stradă cu numele satului, în alt oraș, nu e satul', () => {
+    const f = { geometry: { coordinates: [26.1, 44.4] }, properties: { layer: 'address', label: 'Strada Bucovăț 56, Bucureşti', name: 'Strada Bucovăț 56', locality: 'Bucureşti' } };
+    expect(alegeRezultat([f], 'Bucovat', '')).toBeUndefined();
+  });
+  it('dintre localitățile omonime o ia pe cea de lângă Timișoara', () => {
+    const departe = { ...loc('Bucovat'), lat: 44.3, lon: 23.7, pop: 5000 };
+    const aproape = { ...loc('Bucovat'), lat: 45.76, lon: 21.38 };
+    expect(centruLocalitate('Bucovat', [departe, aproape])).toBe(aproape);
   });
   it('textul de căutat: strada întâi, fără paranteze', () => {
     expect(interogare('Ghiroda, str Exemplu 1 (lângă magazin)')).toBe('str Exemplu 1, Ghiroda');

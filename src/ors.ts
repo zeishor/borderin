@@ -23,34 +23,65 @@ async function cere(url: string, cheie: string, corp?: unknown): Promise<any> {
 }
 
 export interface Gasit extends Punct {
-  /** Adevărat doar pentru stradă sau număr, în localitatea cerută. */
+  /** Adevărat doar pentru strada cerută (cu sau fără număr), în localitatea cerută. */
   precis: boolean;
+  /** Ce a găsit serviciul, de arătat șoferului. */
+  eticheta: string;
 }
 
-/** Caută o adresă în România, cu preferință pentru zona Timișoarei. */
-export async function cautaAdresa(text: string, localitate: string, cheie: string): Promise<Gasit | undefined> {
-  const p = new URLSearchParams({
-    text,
-    'boundary.country': 'ROU',
-    'focus.point.lat': '45.75',
-    'focus.point.lon': '21.23',
-    size: '5',
-  });
-  const j = await cere(`${BAZA}/pelias/v1/search?${p}`, cheie);
+/** Cuvântul cel mai lung din numele străzii, după care se recunoaște în rezultat. */
+function cuvantStrada(strada: string): string {
+  const cuvinte = norm(strada).replace(/^(strada|bulevardul|calea|aleea|piata|splaiul|intrarea|soseaua)\s+/, '').split(/[^a-z0-9]+/);
+  return cuvinte.sort((a, b) => b.length - a.length)[0] ?? '';
+}
+
+/** Alege din rezultatele serviciului: întâi strada cerută (cu număr dacă se poate), apoi orice din localitate. */
+export function alegeRezultat(features: any[], localitate: string, strada: string): Gasit | undefined {
   const loc = norm(localitate);
-  const rezultate = (j.features ?? []).map((f: any) => {
+  const cuvant = cuvantStrada(strada);
+  const rezultate = features.map((f) => {
     const pr = f.properties ?? {};
-    const inLocalitate = [pr.locality, pr.localadmin, pr.name, pr.label].some((x) => typeof x === 'string' && norm(x).includes(loc));
+    const contine = (campuri: unknown[], ce: string) => campuri.some((x) => typeof x === 'string' && norm(x).includes(ce));
+    // Doar localitatea rezultatului contează: „Strada Bucovăț, București" nu e în Bucovăț.
+    const eLocalitate = ['locality', 'localadmin'].includes(pr.layer);
+    const inLocalitate = contine([pr.locality, pr.localadmin, eLocalitate ? pr.name : undefined], loc);
     return {
-      lon: f.geometry.coordinates[0],
-      lat: f.geometry.coordinates[1],
+      lon: f.geometry.coordinates[0] as number,
+      lat: f.geometry.coordinates[1] as number,
+      eticheta: String(pr.label ?? pr.name ?? ''),
       inLocalitate,
-      precis: inLocalitate && ['address', 'street', 'venue'].includes(pr.layer),
+      cuNumar: pr.layer === 'address',
+      precis: inLocalitate && ['address', 'street', 'venue'].includes(pr.layer) && !!cuvant && contine([pr.street, pr.name, pr.label], cuvant),
     };
   });
   // Un rezultat din altă localitate e mai rău decât niciunul.
-  const bun = rezultate.find((x: any) => x.precis) ?? rezultate.find((x: any) => x.inLocalitate);
-  return bun && { lat: bun.lat, lon: bun.lon, precis: bun.precis };
+  const bun =
+    rezultate.find((x) => x.precis && x.cuNumar) ?? rezultate.find((x) => x.precis) ?? rezultate.find((x) => x.inLocalitate);
+  return bun && { lat: bun.lat, lon: bun.lon, precis: bun.precis, eticheta: bun.eticheta };
+}
+
+/** Caută o adresă în România, încercând variantele pe rând până găsește strada. */
+export async function cautaAdresa(
+  variante: string[],
+  localitate: string,
+  strada: string,
+  cheie: string,
+): Promise<Gasit | undefined> {
+  let rezerva: Gasit | undefined;
+  for (const text of variante) {
+    const p = new URLSearchParams({
+      text,
+      'boundary.country': 'ROU',
+      'focus.point.lat': '45.75',
+      'focus.point.lon': '21.23',
+      size: '10',
+    });
+    const j = await cere(`${BAZA}/pelias/v1/search?${p}`, cheie);
+    const gasit = alegeRezultat(j.features ?? [], localitate, strada);
+    if (gasit?.precis) return gasit;
+    rezerva ??= gasit;
+  }
+  return rezerva;
 }
 
 /** Minutele de condus între toate perechile de puncte; `null` unde serviciul nu găsește drum. */

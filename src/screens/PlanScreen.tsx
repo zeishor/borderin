@@ -123,6 +123,7 @@ export function PlanScreen({ id }: { id: string }) {
           <p class="muted">
             {start}
             {plan.startAprox ? ' (poziție aproximativă)' : ''}
+            {plan.startGasit ? ` · găsit: ${plan.startGasit}` : ''}
           </p>
 
           {plan.opriri.map((salvata, i) => {
@@ -147,6 +148,9 @@ export function PlanScreen({ id }: { id: string }) {
                   </div>
                   <span class="muted">{o.adresa}</span>
                   {o.aprox && <span class="chip aprox">⚠ poziție aproximativă</span>}
+                  {!plan.estimat && (
+                    <span class="muted gasit">{o.gasit ? `Găsit pe hartă: ${o.gasit}` : 'Negăsit pe hartă: folosesc centrul localității.'}</span>
+                  )}
                   <div class="actiuni">
                     {o.telefon && ora !== undefined && (
                       <a class="wa" href={`${waLink(o.telefon)}?text=${encodeURIComponent(mesaj(ora, o.adresa))}`} target="_blank" rel="noopener">

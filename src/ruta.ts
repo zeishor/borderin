@@ -43,11 +43,24 @@ export function localitateDin(adresa: string, baza: Loc[]): string {
   for (const parte of adresa.replace(/\([^)]*\)/g, '').split(',')) {
     const strada = parte.search(STRADA);
     const candidat = (strada >= 0 ? parte.slice(0, strada) : parte).trim();
+    // „Bucovat 56": localitate urmată de număr.
+    const faraNumar = candidat.replace(/\s+(nr\.?\s*)?\d.*$/i, '');
+    if (faraNumar !== candidat && parte === adresa.split(',')[0] && gaseste(faraNumar, baza)) return faraNumar;
     if (!candidat || /\d/.test(candidat)) continue;
     // Prima parte e localitatea; părțile următoare contează doar dacă sunt în bază.
     if (gaseste(candidat, baza) || (parte === adresa.split(',')[0] && strada !== 0)) return candidat;
   }
   return 'Timisoara';
+}
+
+export const CENTRU_TIMISOARA: Punct = { lat: 45.7537, lon: 21.2257 };
+
+/** Dintre localitățile cu același nume, cea mai apropiată de Timișoara (Bucovăț din Timiș, nu din Dolj). */
+export function centruLocalitate(nume: string, baza: Loc[]): Loc | undefined {
+  const n = norm(nume);
+  return baza
+    .filter((l) => norm(l.ascii || l.nume) === n || norm(l.nume) === n)
+    .sort((a, b) => distantaKm(a, CENTRU_TIMISOARA) - distantaKm(b, CENTRU_TIMISOARA))[0];
 }
 
 /** Textul de căutat pe hartă: strada întâi, localitatea la urmă, fără observații în paranteză. */
@@ -56,6 +69,60 @@ export function interogare(adresa: string): string {
   const [prima, ...rest] = curat.split(',').map((x) => x.trim()).filter(Boolean);
   if (rest.length && !STRADA.test(prima) && !/\d/.test(prima)) return `${rest.join(', ')}, ${prima}`;
   return curat;
+}
+
+/**
+ * Strada și numărul dintr-o adresă scrisă de dispecer, fără ce încurcă căutarea pe hartă
+ * („nr.", scară, bloc, apartament, observații în paranteză).
+ */
+export function stradaSiNumar(adresa: string, localitate: string): { strada: string; numar?: string } {
+  const parti = adresa
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/(?<![\p{L}])(sc(ara)?|bl(oc(ul)?)?|ap(art(ament)?)?|et(aj)?|int(erfon)?)(?![\p{L}])\.?\s*[\p{L}\d]{1,4}(?![\p{L}\d])/giu, ' ')
+    .split(',')
+    .map((x) => x.replace(/\s+/g, ' ').trim())
+    // Localitatea, singură sau urmată de un număr, nu face parte din stradă.
+    .filter((x) => x && norm(x) !== norm(localitate));
+  // „Bucovat 56, …": adresă de sat, numărul vine direct după localitate; restul sunt indicații.
+  const dupaSat = parti.map((x) => (norm(x).startsWith(`${norm(localitate)} `) ? x.slice(localitate.length).trim() : ''))[0];
+  if (dupaSat && /^(nr\.?\s*)?\d+\s?[a-z]?$/i.test(dupaSat)) return { strada: '', numar: dupaSat.replace(/^nr\.?\s*/i, '') };
+  const iStrada = parti.findIndex((x) => STRADA.test(x) && !/^nr(?![\p{L}])/iu.test(x));
+  const i = iStrada >= 0 ? iStrada : 0;
+  let strada = parti[i] ?? '';
+  if (norm(strada).startsWith(`${norm(localitate)} `)) strada = strada.slice(localitate.length).trim();
+
+  let numar: string | undefined;
+  const cuNr = [strada, ...parti.slice(i + 1)].join(', ').match(/(?<![\p{L}])(?:nr|num[aă]rul)(?![\p{L}])\.?\s*(\d+\s?[a-z]?)(?![\p{L}\d])/iu);
+  if (cuNr) numar = cuNr[1];
+  strada = strada.replace(/(?<![\p{L}])(?:nr|num[aă]rul)(?![\p{L}])\.?.*$/iu, '').trim();
+  const laSfarsit = strada.match(/^(.*\p{L}.*?)\s+(\d+\s?[a-z]?)$/iu);
+  // „str. 505": numărul e chiar numele străzii.
+  if (laSfarsit && !/^(str\.?|strada)$/i.test(laSfarsit[1])) {
+    strada = laSfarsit[1];
+    numar ??= laSfarsit[2];
+  } else numar ??= parti.slice(i + 1).find((x) => /^\d+\s?[a-z]?$/i.test(x));
+
+  strada = strada
+    .replace(/^(?:str\.|str(?![\p{L}])|strada(?![\p{L}]))\s*/iu, 'Strada ')
+    .replace(/^(?:b-?dul\.?|bd\.?|b-dul)\s*/i, 'Bulevardul ')
+    .replace(/[\s.-]+$/, '')
+    .trim();
+  if (strada && !/^(strada|bulevardul|calea|aleea|pia[tț]a|splaiul|intrarea|[sș]oseaua)(?![\p{L}])/iu.test(strada)) strada = `Strada ${strada}`;
+  return { strada, numar };
+}
+
+/** Variantele de căutare, de la cea mai exactă la cea mai largă. */
+export function interogari(adresa: string, localitate: string): string[] {
+  const { strada, numar } = stradaSiNumar(adresa, localitate);
+  if (!strada) return numar ? [`${localitate} ${numar}`] : [interogare(adresa)];
+  const faraPrefix = strada.replace(/^Strada /, '');
+  return [
+    ...new Set([
+      `${strada}${numar ? ` ${numar}` : ''}, ${localitate}`,
+      `${faraPrefix}${numar ? ` ${numar}` : ''}, ${localitate}`,
+      `${strada}, ${localitate}`,
+    ]),
+  ];
 }
 
 export const cheiePereche = (a: string, b: string) => `${a}>${b}`;

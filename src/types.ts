@@ -75,6 +75,8 @@ export interface OprirePlan {
   punct?: Punct;
   /** Punctul e doar centrul localității sau o potrivire nesigură. */
   aprox?: boolean;
+  /** Ce a găsit serviciul de hărți pentru adresă. */
+  gasit?: string;
 }
 
 /** Planul de preluare al unei curse de dus. Opririle sunt în ordinea în care se fac. */
@@ -89,6 +91,7 @@ export interface PlanPreluare {
   /** Duratele sunt estimate din distanțe, fără serviciul de rute. */
   estimat: boolean;
   startAprox?: boolean;
+  startGasit?: string;
 }
 
 export interface Cursa {

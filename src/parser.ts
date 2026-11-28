@@ -662,7 +662,10 @@ function parseLiber(text: string): RezervareExtrasa | undefined {
 export function parseMesaje(text: string, astazi: string = azi()): Rezultat {
   const rezultat: Rezultat = { rezervari: [], note: [] };
 
-  for (const mesaj of imparteMesaje(text, astazi)) {
+  // Tabelele pun uneori un apostrof în fața telefonului („'0700 …"), ca să rămână text.
+  const faraApostrof = text.replace(/(^|[\t\n;])([ ]*)['’‘`]+(?=[ ]*(?:\+|0))/g, '$1$2');
+
+  for (const mesaj of imparteMesaje(faraApostrof, astazi)) {
     const t = mesaj.text.trim();
     const celule = mesaj.text.split('\t').map((c) => {
       const x = c.trim();

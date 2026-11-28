@@ -61,6 +61,24 @@ describe('rezervări de aeroport', () => {
     expect(r.lasare).toBe('Arad');
     expect(r.zbor).toBe('LH 1334');
   });
+
+  it('telefon cu apostrof în față, din tabel', () => {
+    const rez = parseMesaje(
+      t('Ana', 'Pop', "'0700 000 020", '2026-11-29', 'Arad-Budapesta', 'Arad , str. Exemplu, nr.22', '', '16:25 , decolare', 'Aeroport Budapesta', 'Achitat'),
+      AZI,
+    );
+    expect(rez.data).toBe('2026-11-29');
+    expect(rez.rezervari[0]).toMatchObject({
+      nume: 'Ana Pop',
+      telefoane: [{ numar: '0700 000 020' }],
+      data: '2026-11-29',
+      ora: '16:25',
+      directie: 'dus',
+      preluare: 'Arad, str. Exemplu, nr.22',
+      lasare: 'Aeroport Budapesta',
+      plata: { stare: 'achitat' },
+    });
+  });
 });
 
 describe('plată', () => {

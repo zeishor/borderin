@@ -15,7 +15,7 @@ import { useCerePret } from '../cerepret';
 import { aplicaPret, norm, opririCursa, SURSA_MANUALA } from '../preturi';
 import { pretSpalare, spalariDecontate } from '../spalatorie';
 import { analizaCursa, soldCurse } from '../decontcursa';
-import { textSold } from './DecontScreen';
+import { impartire, textImpartire } from '../decont';
 import { inRon } from '../curs';
 import { statusLocala } from '../locale';
 import type { MonedaBilet, Rezervare } from '../types';
@@ -229,7 +229,7 @@ export function CursaScreen({ id }: { id: string }) {
       </div>
       {arePlataIncasata(ale) && (
         <div class="total">
-          <span>Încasat (de predat firmei)</span>
+          <span>Total încasat</span>
           <strong>{textIncasat(ale)}</strong>
         </div>
       )}
@@ -297,9 +297,9 @@ export function CursaScreen({ id }: { id: string }) {
         </span>
         {analiza.deDecontat && (
           <span class="linie rezumat">
-            De luat {fmtLei(rezultat.deLuat)}
+            Partea ta {fmtLei(rezultat.deLuat)}
             {analiza.incasat.EUR + analiza.incasat.RON + analiza.incasat.GBP + analiza.incasat.CHF > 0 && rezultat.lipsa.length === 0
-              ? ` · ${textSold(rezultat.sold)}`
+              ? ` · ${textImpartire(impartire(analiza.incasat, rezultat.deLuat, setari.cursuri))}`
               : ''}
           </span>
         )}

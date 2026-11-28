@@ -227,4 +227,6 @@ export interface Decont {
   /** Rezultatul în lei: pozitiv = de primit de la firmă, negativ = de predat firmei. */
   soldRon?: number;
   note?: string;
+  /** Ce s-a predat efectiv, pe monede, și ce mai avea șoferul de luat (lei). Lipsește la deconturile vechi. */
+  rezultat?: { preda: Record<Moneda, number>; primeste: number };
 }

@@ -9,6 +9,8 @@ import { BiletScreen } from './screens/BiletScreen';
 import { DecontScreen } from './screens/DecontScreen';
 import { ScanScreen } from './screens/ScanScreen';
 import { PlanScreen } from './screens/PlanScreen';
+import { DecontIstoric } from './screens/DecontIstoric';
+import { DecontLuna } from './screens/DecontLuna';
 
 export function App() {
   useStore();
@@ -16,6 +18,8 @@ export function App() {
 
   if (route === '/cursa-noua') return <CursaNoua />;
   if (route === '/decont') return <DecontScreen />;
+  if (route === '/decont-istoric') return <DecontIstoric />;
+  if (route === '/decont-luna') return <DecontLuna />;
   const decontCursa = route.match(/^\/decont\/(.+)$/);
   if (decontCursa) return <DecontScreen preselect={decontCursa[1]} />;
   if (route === '/setari') return <SetariScreen />;

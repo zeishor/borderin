@@ -23,7 +23,7 @@ export function CursManager({ onClose }: { onClose: () => void }) {
   return (
     <Fereastra titlu="Curs valutar" onClose={onClose}>
       <p class="muted">
-        Firma plătește doar în lei. Cursul se folosește la decont: valuta predată și biletele în valută se transformă în lei.
+        Firma plătește doar în lei. Cursul se folosește la decont: încasările, biletele și cheltuielile în valută se transformă în lei.
         La fiecare decont îl poți ajusta.
       </p>
       {MONEDE_CURS.map((m) => (

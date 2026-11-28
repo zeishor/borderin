@@ -91,7 +91,7 @@ Mesajele reale conțin nume și telefoane. Exemplele pentru teste se pun în `sa
 
 ## Decont
 
-Ecranul „Decont" (💼 din lista de curse): șoferul alege când merge la firmă. Un decont înregistrează banii predați (EUR/RON, parțial sau tot) și biletele decontate (toate odată sau alese). Soldul „de predat" = încasat − predat, pe monede; biletele decontate dispar din „nedecontate". Un decont se poate anula, iar soldurile revin. Conversia dintre monede (bilete în HUF, bani în EUR/RON) nu se face în aplicație.
+Ecranul „Decont": cursele terminate intră automat (din „Alege" se pot scoate). Se adună **Total încasat**, se scade **Partea ta** (curse, parcare, spălătorie, alte cheltuieli) și iese **De predat**, pe monede: partea șoferului se oprește întâi din lei, apoi la curs din euro; valuta se predă în sume întregi, iar diferența măruntă în lei. Când partea e mai mare decât încasările apare **Mai ai de luat**, în lei. Opțional se ține ceva ca mărunțiș (apare data viitoare). Deconturile făcute și rezumatul lunii (salariu + curse) au ecrane separate; un decont se poate anula.
 
 ## Plan de preluare
 
@@ -99,7 +99,7 @@ Pe o cursă de dus spre Ungaria, „Plan de preluare" ordonează adresele de pre
 
 ## Prețuri, curs valutar și decontul net
 
-Firma plătește doar în lei. În Setări → „Prețuri și salariu" șoferul pune salariul de bază (nu se decontează), sumele de spălătorie (mașină mică/mare) și localitățile mamă cu suma pe cursă, plus limitrofele lor. Cursa ia suma celei mai scumpe opriri; la o oprire fără preț apare un popup care întreabă localitatea mamă (se întreabă o singură dată). În Setări → „Curs valutar" se scriu cursurile (1 EUR = x lei etc.). Decontul e net, în lei: ce ai de luat (curse, spălătorie, bilete la curs) minus valuta predată la curs → „de primit" sau „de predat". Rezumatul lunii din ecranul Decont adună salariul de bază și cursele din lună.
+Firma plătește doar în lei. În Setări → „Prețuri și salariu" șoferul pune salariul de bază (nu se decontează), sumele de spălătorie (mașină mică/mare) și localitățile mamă cu suma pe cursă, plus limitrofele lor. Cursa ia suma celei mai scumpe opriri; la o oprire fără preț apare un popup care întreabă localitatea mamă (se întreabă o singură dată). În Setări → „Curs valutar" se scriu cursurile (1 EUR = x lei etc.).
 
 ### Baza de localități
 

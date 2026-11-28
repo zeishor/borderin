@@ -1,4 +1,4 @@
-import { incasat } from './format';
+import { fmtSuma, incasat, textBani } from './format';
 import { MONEDE, zero } from './monede';
 import { inRon } from './curs';
 import type { Bilet, Cursa, Cursuri, Decont, Moneda, MonedaBilet, Rezervare } from './types';
@@ -86,6 +86,49 @@ export function calculeazaSold(p: {
     else predat += ron;
   }
   return { deLuat: rotunjeste(deLuat), predat: rotunjeste(predat), sold: rotunjeste(deLuat - predat), lipsa: [...lipsa] };
+}
+
+export interface Impartire {
+  /** Banii pe care îi predă șoferul, pe monede. */
+  preda: Totaluri;
+  /** Lei pe care îi mai are de luat, când partea lui e mai mare decât încasările. */
+  primeste: number;
+}
+
+/**
+ * Șoferul își oprește partea (în lei) din încasări și predă restul: întâi oprește din lei, apoi, la curs, din euro
+ * (și, după el, din lire sau franci). Valuta se predă în sume întregi; diferența măruntă iese în lei.
+ * Monedele încasate trebuie să aibă curs (vezi `Sold.lipsa`).
+ */
+export function impartire(incasat: Totaluri, parte: number, cursuri: Cursuri): Impartire {
+  const preda = zero();
+  const total = MONEDE.reduce((t, m) => t + (incasat[m] ? (inRon(incasat[m], m, cursuri) ?? 0) : 0), 0);
+  if (rotunjeste(parte - total) >= 0) return { preda, primeste: rotunjeste(parte - total) };
+
+  let deOprit = rotunjeste(parte - incasat.RON);
+  if (deOprit <= 0) preda.RON = -deOprit;
+  for (const m of MONEDE) {
+    if (m === 'RON' || !incasat[m]) continue;
+    const curs = inRon(1, m, cursuri);
+    if (deOprit <= 0 || curs === undefined) {
+      preda[m] = incasat[m];
+    } else if (incasat[m] * curs <= deOprit) {
+      deOprit = rotunjeste(deOprit - incasat[m] * curs);
+    } else {
+      const ramas = incasat[m] - deOprit / curs;
+      preda[m] = Math.floor(ramas + 1e-9);
+      preda.RON = rotunjeste(preda.RON + (ramas - preda[m]) * curs);
+      deOprit = 0;
+    }
+  }
+  return { preda, primeste: 0 };
+}
+
+/** „De predat: 171 € + 1 lei", „Mai ai de luat: 744 lei". */
+export function textImpartire(i: Impartire): string {
+  if (i.primeste > 0) return `Mai ai de luat: ${fmtSuma(i.primeste, 'RON')}`;
+  if (MONEDE.some((m) => i.preda[m] > 0)) return `De predat: ${textBani(i.preda)}`;
+  return 'Nimic de predat, nimic de luat';
 }
 
 /** Monedele străine folosite într-un decont (predate sau în bilete), pentru care trebuie un curs. */
